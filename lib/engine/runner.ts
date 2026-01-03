@@ -296,15 +296,10 @@ async function fetchAllSignals(
   for (const sourceId of uniqueSourceIds) {
     // Check if it's a built-in source
     if (sourceId === "fear_greed_crypto") {
-      const result = await fetchSignal({
-        id: "fear_greed_crypto",
-        name: "Fear & Greed Index (Crypto)",
-        type: "api",
-        config_json: {
-          url: "https://api.alternative.me/fng/",
-          jsonpath: "$.data[0].value",
-        },
-      } as SignalSource);
+      const result = await fetchSignal("api", {
+        url: "https://api.alternative.me/fng/",
+        jsonpath: "$.data[0].value",
+      });
 
       readings.push({
         source_id: sourceId,
@@ -324,7 +319,7 @@ async function fetchAllSignals(
       .single();
 
     if (source) {
-      const result = await fetchSignal(source);
+      const result = await fetchSignal(source.type, source.config_json);
       readings.push({
         source_id: sourceId,
         value: result.value,
