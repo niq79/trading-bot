@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StrategyForm } from "@/components/strategies/strategy-form";
+import { TestRunButton } from "@/components/strategies/test-run-button";
 import { Strategy } from "@/types/strategy";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface StrategyDetailPageProps {
   params: Promise<{ id: string }>;
@@ -36,10 +38,24 @@ export default async function StrategyDetailPage({
   return (
     <div className="p-6 space-y-6">
       <PageHeader
-        title="Edit Strategy"
-        description={`Configure ${strategy.name}`}
+        title={strategy.name}
+        description="Configure and test your trading strategy"
       />
-      <StrategyForm strategy={strategy} mode="edit" />
+      
+      <Tabs defaultValue="config" className="w-full">
+        <TabsList>
+          <TabsTrigger value="config">Configuration</TabsTrigger>
+          <TabsTrigger value="test">Test Run</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="config" className="mt-6">
+          <StrategyForm strategy={strategy} mode="edit" />
+        </TabsContent>
+        
+        <TabsContent value="test" className="mt-6">
+          <TestRunButton strategyId={strategy.id} strategyName={strategy.name} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
