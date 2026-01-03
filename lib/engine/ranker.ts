@@ -61,63 +61,58 @@ async function getIndexSymbols(indexId: string): Promise<string[]> {
   // In a production system, these would be fetched from a data provider
   // For MVP, we use static lists
   const indices: Record<string, string[]> = {
-    sp500_top10: [
-      "AAPL",
-      "MSFT",
-      "GOOGL",
-      "AMZN",
-      "NVDA",
-      "META",
-      "TSLA",
-      "BRK.B",
-      "UNH",
-      "JNJ",
-    ],
-    nasdaq100_top10: [
-      "AAPL",
-      "MSFT",
-      "GOOGL",
-      "AMZN",
-      "NVDA",
-      "META",
-      "TSLA",
-      "AVGO",
-      "COST",
-      "ADBE",
-    ],
-    dow30: [
-      "AAPL",
-      "AMGN",
-      "AXP",
-      "BA",
-      "CAT",
-      "CRM",
-      "CSCO",
-      "CVX",
-      "DIS",
-      "DOW",
-      "GS",
-      "HD",
-      "HON",
-      "IBM",
-      "INTC",
-      "JNJ",
-      "JPM",
-      "KO",
-      "MCD",
-      "MMM",
-      "MRK",
-      "MSFT",
-      "NKE",
-      "PG",
-      "TRV",
-      "UNH",
-      "V",
-      "VZ",
-      "WBA",
-      "WMT",
-    ],
+    // Magnificent 7
     mag7: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"],
+
+    // Dow 30
+    dow30: [
+      "AAPL", "AMGN", "AXP", "BA", "CAT", "CRM", "CSCO", "CVX", "DIS", "DOW",
+      "GS", "HD", "HON", "IBM", "INTC", "JNJ", "JPM", "KO", "MCD", "MMM",
+      "MRK", "MSFT", "NKE", "PG", "TRV", "UNH", "V", "VZ", "WBA", "WMT",
+    ],
+
+    // S&P 500 Top 10 by market cap
+    sp500_top10: [
+      "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B", "UNH", "JNJ",
+    ],
+
+    // S&P 500 Top 50 by market cap
+    sp500_top50: [
+      "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B", "UNH", "JNJ",
+      "V", "XOM", "JPM", "WMT", "PG", "MA", "HD", "CVX", "MRK", "ABBV",
+      "LLY", "PEP", "KO", "COST", "AVGO", "TMO", "MCD", "CSCO", "ACN", "ABT",
+      "DHR", "CRM", "ADBE", "CMCSA", "NKE", "PFE", "NFLX", "TXN", "AMD", "NEE",
+      "INTC", "PM", "RTX", "HON", "AMGN", "QCOM", "T", "UPS", "MS", "ORCL",
+    ],
+
+    // NASDAQ 100 Top 10 by market cap
+    nasdaq100_top10: [
+      "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "AVGO", "COST", "ADBE",
+    ],
+
+    // NASDAQ 100 Top 50 by market cap
+    nasdaq100_top50: [
+      "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "AVGO", "COST", "ADBE",
+      "CSCO", "NFLX", "AMD", "INTC", "QCOM", "TXN", "INTU", "CMCSA", "AMGN", "HON",
+      "AMAT", "SBUX", "BKNG", "ISRG", "GILD", "MDLZ", "ADI", "VRTX", "LRCX", "REGN",
+      "PYPL", "PANW", "SNPS", "KLAC", "CDNS", "ASML", "ADP", "MELI", "MNST", "CSX",
+      "MAR", "ORLY", "NXPI", "FTNT", "PCAR", "MRNA", "AEP", "CTAS", "MCHP", "KDP",
+    ],
+
+    // Russell 2000 Top 50 (representative small-caps)
+    russell2000_top50: [
+      "SMCI", "CELH", "COOP", "EXAS", "PCVX", "HALO", "AXON", "LNTH", "PI", "RCM",
+      "KTOS", "ENVX", "GSHD", "SFM", "AEHR", "CPRX", "UFPI", "CVLT", "APLS", "SPSC",
+      "CRVL", "OLO", "FORM", "TMDX", "KRYS", "PRCT", "AGIO", "BRBR", "VCEL", "SAIA",
+      "BCPC", "XPEL", "FROG", "IOVA", "ANF", "BOOT", "VCYT", "RXRX", "ESTE", "RELY",
+      "SPWR", "MGY", "MNDY", "WFRD", "PRGS", "NEOG", "ROIC", "VERX", "AUR", "CRGY",
+    ],
+
+    // Top 10 Crypto (by market cap)
+    // Note: Crypto trades 24/7 but this bot only runs at 3:55 PM ET on weekdays
+    crypto_top10: [
+      "BTCUSD", "ETHUSD", "XRPUSD", "SOLUSD", "ADAUSD", "DOGEUSD", "AVAXUSD", "DOTUSD", "LINKUSD", "MATICUSD",
+    ],
   };
 
   return indices[indexId] || [];

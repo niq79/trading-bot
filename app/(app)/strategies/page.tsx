@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LineChart, Plus } from "lucide-react";
 import { Strategy } from "@/types/strategy";
 import { StrategyList } from "@/components/strategies/strategy-list";
+import { StrategyTemplates } from "@/components/strategies/strategy-templates";
 
 export default async function StrategiesPage() {
   const supabase = await createClient();
@@ -42,16 +43,19 @@ export default async function StrategiesPage() {
         }
       />
 
+      {/* Always show templates at the top */}
+      <StrategyTemplates />
+
       {!typedStrategies || typedStrategies.length === 0 ? (
         <EmptyState
           icon={LineChart}
           title="No strategies yet"
-          description="Create your first trading strategy to get started with automated trading."
+          description="Choose a template above or create a custom strategy from scratch."
           action={
             <Button asChild>
               <Link href="/strategies/new">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Strategy
+                Create Custom Strategy
               </Link>
             </Button>
           }

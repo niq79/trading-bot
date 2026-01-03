@@ -34,31 +34,53 @@ import {
   UniverseConfig,
 } from "@/types/strategy";
 
+interface TemplateConfig {
+  name: string;
+  universe: string;
+  ranking: string;
+  topN: number;
+  rebalance: number;
+}
+
 interface StrategyFormProps {
   strategy?: Strategy;
   mode: "create" | "edit";
+  templateConfig?: TemplateConfig;
 }
 
-export function StrategyForm({ strategy, mode }: StrategyFormProps) {
+export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Build initial values from template if provided
+  const initialParams: StrategyParams = templateConfig
+    ? {
+        ...DEFAULT_STRATEGY_PARAMS,
+        long_n: templateConfig.topN,
+        rebalance_fraction: templateConfig.rebalance,
+        ranking_metric: templateConfig.ranking as StrategyParams["ranking_metric"],
+      }
+    : ((strategy?.params_json as StrategyParams) ?? DEFAULT_STRATEGY_PARAMS);
+
+  const initialUniverse: UniverseConfig = templateConfig
+    ? {
+        type: "predefined",
+        predefined_list: templateConfig.universe as UniverseConfig["predefined_list"],
+      }
+    : ((strategy?.universe_config_json as UniverseConfig) ?? DEFAULT_UNIVERSE_CONFIG);
+
   // Basic info
-  const [name, setName] = useState(strategy?.name ?? "");
+  const [name, setName] = useState(templateConfig?.name ?? strategy?.name ?? "");
   const [allocationPct, setAllocationPct] = useState(
     strategy?.allocation_pct ?? 10
   );
   const [isEnabled, setIsEnabled] = useState(strategy?.is_enabled ?? false);
 
   // Params
-  const [params, setParams] = useState<StrategyParams>(
-    (strategy?.params_json as StrategyParams) ?? DEFAULT_STRATEGY_PARAMS
-  );
+  const [params, setParams] = useState<StrategyParams>(initialParams);
 
   // Universe
-  const [universeConfig, setUniverseConfig] = useState<UniverseConfig>(
-    (strategy?.universe_config_json as UniverseConfig) ?? DEFAULT_UNIVERSE_CONFIG
-  );
+  const [universeConfig, setUniverseConfig] = useState<UniverseConfig>(initialUniverse);
   const [customSymbols, setCustomSymbols] = useState(
     universeConfig.custom_symbols?.join(", ") ?? ""
   );
@@ -215,10 +237,10 @@ export function StrategyForm({ strategy, mode }: StrategyFormProps) {
                   <Label>Select List</Label>
                   <Select
                     value={universeConfig.predefined_list}
-                    onValueChange={(value: "sp500" | "nasdaq100" | "crypto100") =>
+                    onValueChange={(value) =>
                       setUniverseConfig({
                         ...universeConfig,
-                        predefined_list: value,
+                        predefined_list: value as UniverseConfig["predefined_list"],
                       })
                     }
                   >

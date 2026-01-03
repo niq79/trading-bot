@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
+import { NextRunTime } from "@/components/shared/next-run-time";
 import {
   Card,
   CardContent,
@@ -135,10 +136,7 @@ export default async function DashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3:55 PM</div>
-            <p className="text-xs text-muted-foreground">
-              ET (End of Day)
-            </p>
+            <NextRunTime />
           </CardContent>
         </Card>
       </div>
