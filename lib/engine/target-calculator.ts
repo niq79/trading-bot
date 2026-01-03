@@ -38,13 +38,13 @@ export function calculateTargetPositions(
 ): TargetCalculationResult {
   // Apply signal conditions to determine modifiers
   const signalModifiers = calculateSignalModifiers(
-    executionConfig.signal_conditions,
+    executionConfig.signal_conditions ?? [],
     signalReadings
   );
 
   // Check if we should trade at all (conditional gate)
   const shouldTrade = checkConditionalGates(
-    executionConfig.signal_conditions,
+    executionConfig.signal_conditions ?? [],
     signalReadings
   );
 
