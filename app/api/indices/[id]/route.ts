@@ -17,9 +17,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // @ts-expect-error - synthetic_indices not in generated types
     const { data: index, error } = await supabase
-      .from("synthetic_indices")
+      .from("synthetic_indices" as "strategies")
       .select("*")
       .eq("id", id)
       .eq("user_id", user.id)
@@ -89,14 +88,13 @@ export async function PATCH(
       }
     }
 
-    // @ts-expect-error - synthetic_indices not in generated types
     const { data: index, error } = await supabase
-      .from("synthetic_indices")
+      .from("synthetic_indices" as "strategies")
       .update({
         name,
         components,
         weights: weights || null,
-      })
+      } as never)
       .eq("id", id)
       .eq("user_id", user.id)
       .select()
@@ -136,9 +134,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // @ts-expect-error - synthetic_indices not in generated types
     const { error } = await supabase
-      .from("synthetic_indices")
+      .from("synthetic_indices" as "strategies")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);

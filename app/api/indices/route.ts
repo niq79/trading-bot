@@ -13,9 +13,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // @ts-expect-error - synthetic_indices not in generated types
     const { data: indices, error } = await supabase
-      .from("synthetic_indices")
+      .from("synthetic_indices" as "strategies")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
@@ -84,15 +83,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // @ts-expect-error - synthetic_indices not in generated types
     const { data: index, error } = await supabase
-      .from("synthetic_indices")
+      .from("synthetic_indices" as "strategies")
       .insert({
         user_id: user.id,
         name,
         components,
         weights: weights || null,
-      })
+      } as never)
       .select()
       .single();
 
