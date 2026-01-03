@@ -34,7 +34,7 @@ export interface ExecutionConfig {
   signal_conditions: SignalCondition[] | null;
   cash_reserve_pct: number;
   top_n: number;
-  weight_scheme: "equal" | "market_cap" | "score_weighted";
+  weight_scheme: "equal" | "score_weighted" | "inverse_volatility";
 }
 
 export interface Strategy {
