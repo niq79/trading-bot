@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import {
   Strategy,
   CreateStrategyInput,
@@ -33,6 +34,12 @@ import {
   StrategyParams,
   UniverseConfig,
 } from "@/types/strategy";
+
+interface SyntheticIndex {
+  id: string;
+  name: string;
+  components: string[];
+}
 
 interface TemplateConfig {
   name: string;
@@ -84,6 +91,29 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
   const [customSymbols, setCustomSymbols] = useState(
     universeConfig.custom_symbols?.join(", ") ?? ""
   );
+
+  // Synthetic Indices
+  const [syntheticIndices, setSyntheticIndices] = useState<SyntheticIndex[]>([]);
+  const [isLoadingIndices, setIsLoadingIndices] = useState(false);
+
+  // Fetch synthetic indices when type is synthetic
+  useEffect(() => {
+    if (universeConfig.type === "synthetic") {
+      setIsLoadingIndices(true);
+      fetch("/api/indices")
+        .then((res) => res.json())
+        .then((data) => {
+          setSyntheticIndices(data.indices || []);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch indices:", err);
+          toast.error("Failed to load synthetic indices");
+        })
+        .finally(() => {
+          setIsLoadingIndices(false);
+        });
+    }
+  }, [universeConfig.type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,9 +306,42 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
               {universeConfig.type === "synthetic" && (
                 <div className="space-y-2">
                   <Label>Synthetic Index</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Create synthetic indices in the Synthetic Indices page first
-                  </p>
+                  {isLoadingIndices ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading indices...
+                    </div>
+                  ) : syntheticIndices.length === 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        No synthetic indices found.
+                      </p>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/indices/new">Create Synthetic Index</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      value={universeConfig.synthetic_index}
+                      onValueChange={(value) =>
+                        setUniverseConfig({
+                          ...universeConfig,
+                          synthetic_index: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a synthetic index" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {syntheticIndices.map((index) => (
+                          <SelectItem key={index.id} value={index.id}>
+                            {index.name} ({index.components.length} symbols)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
             </CardContent>
