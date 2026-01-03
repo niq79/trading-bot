@@ -6,6 +6,8 @@ export interface StrategyParams {
   short_n: number;
   rebalance_fraction: number;
   max_weight_per_symbol: number;
+  weight_scheme: "equal" | "score_weighted" | "inverse_volatility";
+  cash_reserve_pct: number;
 }
 
 export interface SignalCondition {
@@ -40,6 +42,7 @@ export interface ExecutionConfig {
   cash_reserve_pct: number;
   top_n: number;
   weight_scheme: "equal" | "score_weighted" | "inverse_volatility";
+  max_weight_per_symbol: number;
 }
 
 export interface Strategy {
@@ -79,6 +82,8 @@ export const DEFAULT_STRATEGY_PARAMS: StrategyParams = {
   short_n: 0,
   rebalance_fraction: 0.25,
   max_weight_per_symbol: 0.1,
+  weight_scheme: "equal",
+  cash_reserve_pct: 0,
 };
 
 export const DEFAULT_UNIVERSE_CONFIG: UniverseConfig = {

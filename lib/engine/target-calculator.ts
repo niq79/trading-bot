@@ -74,7 +74,53 @@ export function calculateTargetPositions(
   const topSymbols = rankedSymbols.slice(0, executionConfig.top_n);
 
   // Calculate weights based on weighting scheme
-  const weights = calculateWeights(topSymbols, executionConfig.weight_scheme);
+  let weights = calculateWeights(topSymbols, executionConfig.weight_scheme);
+
+  // Apply max weight per symbol cap and redistribute excess
+  const maxWeight = executionConfig.max_weight_per_symbol;
+  if (maxWeight < 1) {
+    let redistributionNeeded = true;
+    let iterations = 0;
+    const maxIterations = 10; // Prevent infinite loops
+
+    while (redistributionNeeded && iterations < maxIterations) {
+      redistributionNeeded = false;
+      let excessWeight = 0;
+      const cappedIndices: number[] = [];
+
+      // Find symbols exceeding max weight and calculate excess
+      weights.forEach((w, i) => {
+        if (w > maxWeight) {
+          excessWeight += w - maxWeight;
+          weights[i] = maxWeight;
+          cappedIndices.push(i);
+          redistributionNeeded = true;
+        }
+      });
+
+      // Redistribute excess weight to uncapped symbols
+      if (excessWeight > 0) {
+        const uncappedIndices = weights
+          .map((w, i) => (w < maxWeight && !cappedIndices.includes(i) ? i : -1))
+          .filter((i) => i >= 0);
+
+        if (uncappedIndices.length > 0) {
+          const sharePerUncapped = excessWeight / uncappedIndices.length;
+          uncappedIndices.forEach((i) => {
+            weights[i] += sharePerUncapped;
+          });
+        }
+      }
+
+      iterations++;
+    }
+
+    // Normalize to ensure sum is exactly 1
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    if (totalWeight > 0) {
+      weights = weights.map((w) => w / totalWeight);
+    }
+  }
 
   // Create position map for current positions
   const positionMap = new Map<string, CurrentPosition>();

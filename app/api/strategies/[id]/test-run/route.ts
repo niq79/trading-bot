@@ -69,6 +69,8 @@ export async function POST(
       long_n: number;
       rebalance_fraction: number;
       max_weight_per_symbol: number;
+      weight_scheme: "equal" | "score_weighted" | "inverse_volatility";
+      cash_reserve_pct: number;
     };
     
     // Get rebalance_fraction from strategy (stored at root level for DB backwards compat)
@@ -134,9 +136,10 @@ export async function POST(
     // 4. Calculate target positions
     const executionConfig = {
       signal_conditions: null,
-      cash_reserve_pct: 0,
+      cash_reserve_pct: params.cash_reserve_pct ?? 0,
       top_n: params.long_n,
-      weight_scheme: "equal" as const,
+      weight_scheme: params.weight_scheme ?? "equal",
+      max_weight_per_symbol: params.max_weight_per_symbol ?? 0.2,
     };
 
     const { targets } = calculateTargetPositions(
@@ -201,6 +204,9 @@ export async function POST(
         allocation_pct: allocationPct,
         rebalance_fraction: rebalanceFraction,
         allocated_equity: allocatedEquity,
+        weight_scheme: executionConfig.weight_scheme,
+        max_weight_per_symbol: executionConfig.max_weight_per_symbol,
+        cash_reserve_pct: executionConfig.cash_reserve_pct,
       },
       universe: {
         symbols: universeSymbols,

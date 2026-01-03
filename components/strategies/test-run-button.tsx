@@ -61,6 +61,9 @@ interface TestResult {
     allocation_pct: number;
     rebalance_fraction: number;
     allocated_equity: number;
+    weight_scheme: string;
+    max_weight_per_symbol: number;
+    cash_reserve_pct: number;
   };
   universe: {
     symbols: string[];
@@ -189,7 +192,7 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
               {result.strategy && (
                 <div className="mt-4 pt-4 border-t">
                   <h4 className="text-sm font-medium mb-3">Strategy Parameters Applied</h4>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 mb-3">
                     <div>
                       <p className="text-sm text-muted-foreground">Allocation</p>
                       <p className="text-lg font-semibold">{result.strategy.allocation_pct}%</p>
@@ -204,6 +207,23 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                       <p className="text-sm text-muted-foreground">Top N Symbols</p>
                       <p className="text-lg font-semibold">{result.ranking.topN}</p>
                       <p className="text-xs text-muted-foreground">held positions</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 pt-3 border-t">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Weight Scheme</p>
+                      <p className="text-lg font-semibold capitalize">{result.strategy.weight_scheme.replace('_', ' ')}</p>
+                      <p className="text-xs text-muted-foreground">position sizing</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Max Weight/Symbol</p>
+                      <p className="text-lg font-semibold">{(result.strategy.max_weight_per_symbol * 100).toFixed(0)}%</p>
+                      <p className="text-xs text-muted-foreground">position cap</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cash Reserve</p>
+                      <p className="text-lg font-semibold">{(result.strategy.cash_reserve_pct * 100).toFixed(0)}%</p>
+                      <p className="text-xs text-muted-foreground">uninvested</p>
                     </div>
                   </div>
                 </div>

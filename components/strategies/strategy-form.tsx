@@ -483,6 +483,52 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                   Maximum allocation per symbol (0.1 = 10% of strategy capital)
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="weightScheme">Weighting Scheme</Label>
+                <Select
+                  value={params.weight_scheme}
+                  onValueChange={(value) =>
+                    setParams({
+                      ...params,
+                      weight_scheme: value as "equal" | "score_weighted" | "inverse_volatility",
+                    })
+                  }
+                >
+                  <SelectTrigger id="weightScheme">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="equal">Equal Weight</SelectItem>
+                    <SelectItem value="score_weighted">Score Weighted</SelectItem>
+                    <SelectItem value="inverse_volatility">Inverse Volatility</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  How to distribute capital among selected symbols
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cashReserve">Cash Reserve (%)</Label>
+                <Input
+                  id="cashReserve"
+                  type="number"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={(params.cash_reserve_pct * 100).toFixed(0)}
+                  onChange={(e) =>
+                    setParams({
+                      ...params,
+                      cash_reserve_pct: Number(e.target.value) / 100,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Percentage of allocated capital to keep as cash (0-50%)
+                </p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
