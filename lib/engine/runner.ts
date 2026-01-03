@@ -257,7 +257,7 @@ async function runStrategy(
       source_id: reading.source_id,
       user_id: strategy.user_id,
       value: reading.value,
-      raw_response: reading.raw,
+      raw_response: reading.raw_response,
       fetched_at: reading.fetched_at,
     });
   }
@@ -309,9 +309,9 @@ async function fetchAllSignals(
       readings.push({
         source_id: sourceId,
         value: result.value,
-        raw: result.raw,
+        raw_response: result.raw,
         fetched_at: result.fetchedAt,
-      });
+      } as SignalReading);
       continue;
     }
 
@@ -328,9 +328,9 @@ async function fetchAllSignals(
       readings.push({
         source_id: sourceId,
         value: result.value,
-        raw: result.raw,
+        raw_response: result.raw,
         fetched_at: result.fetchedAt,
-      });
+      } as SignalReading);
     }
   }
 
