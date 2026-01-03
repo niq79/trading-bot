@@ -66,7 +66,8 @@ interface AlpacaOrder {
 
 interface OrderRequest {
   symbol: string;
-  qty: number;
+  qty?: string;
+  notional?: string;
   side: "buy" | "sell";
   type: "market" | "limit";
   time_in_force: "day" | "gtc" | "ioc" | "fok";
