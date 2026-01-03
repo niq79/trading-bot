@@ -30,6 +30,13 @@ export interface UniverseConfig {
   synthetic_index?: string;
 }
 
+export interface ExecutionConfig {
+  signal_conditions: SignalCondition[] | null;
+  cash_reserve_pct: number;
+  top_n: number;
+  weight_scheme: "equal" | "market_cap" | "score_weighted";
+}
+
 export interface Strategy {
   id: string;
   user_id: string;
