@@ -38,7 +38,7 @@ const sidebarNavItems = [
     icon: LineChart,
   },
   {
-    title: "Indices",
+    title: "Synthetic Indices",
     href: "/indices",
     icon: TrendingUp,
   },
