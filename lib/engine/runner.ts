@@ -343,7 +343,6 @@ export async function runAllUsers(): Promise<{
   const supabase = await createServiceClient();
 
   // Get all users with active strategies
-  // @ts-expect-error - strategies table type issue
   const { data: users } = await supabase
     .from("strategies")
     .select("user_id")
