@@ -77,10 +77,86 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### 4. Enable Google OAuth (Optional)
 
+#### Step 1: Create Google Cloud Project
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create OAuth 2.0 Client ID
-3. Add redirect URI: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
-4. Copy Client ID and Secret to Supabase Dashboard > Authentication > Providers > Google
+2. Sign in with your Google account
+3. Click **Select a project** dropdown (top left) → **NEW PROJECT**
+4. Enter project name (e.g., "Trading Bot") → Click **CREATE**
+5. Wait for project creation, then select your new project from the dropdown
+
+#### Step 2: Configure OAuth Consent Screen
+
+1. In the left sidebar, go to **APIs & Services** → **OAuth consent screen**
+2. Choose **External** (for any Google user) → Click **CREATE**
+3. Fill in required fields:
+   - **App name**: Trading Bot (or your app name)
+   - **User support email**: Your email address
+   - **Developer contact information**: Your email address
+4. Click **SAVE AND CONTINUE**
+5. Click **SAVE AND CONTINUE** on Scopes screen (no changes needed)
+6. Click **SAVE AND CONTINUE** on Test users screen (optional)
+7. Click **BACK TO DASHBOARD**
+
+#### Step 3: Create OAuth 2.0 Credentials
+
+1. In the left sidebar, go to **APIs & Services** → **Credentials**
+2. Click **+ CREATE CREDENTIALS** (top) → **OAuth client ID**
+3. Select **Application type**: **Web application**
+4. Enter **Name**: Trading Bot Web Client (or any name)
+5. Under **Authorized redirect URIs**, click **+ ADD URI**
+6. Enter: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
+   - Replace `YOUR-PROJECT` with your actual Supabase project reference ID
+   - Find this in Supabase Dashboard → Project Settings → API → Project URL
+   - Example: If URL is `https://abcdefgh.supabase.co`, use `https://abcdefgh.supabase.co/auth/v1/callback`
+7. Click **CREATE**
+8. A modal will appear with your **Client ID** and **Client Secret** - **COPY BOTH** (you'll need them next)
+
+#### Step 4: Configure Supabase
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. In the left sidebar, go to **Authentication** → **Providers**
+4. Find **Google** in the list and click to expand
+5. Toggle **Enable Sign in with Google** to ON
+6. Paste the **Client ID** from Google Cloud Console
+7. Paste the **Client Secret** from Google Cloud Console
+8. Click **Save**
+
+#### Step 5: Test OAuth Login
+
+1. Start your development server: `npm run dev`
+2. Go to `http://localhost:3000/login`
+3. Click **Continue with Google** button
+4. You should be redirected to Google sign-in
+5. After signing in, you'll be redirected back to your app
+
+**Note**: For production deployment, add your Vercel URL as an additional redirect URI:
+- In Google Cloud Console → Credentials → Your OAuth Client
+- Add: `https://your-vercel-app.vercel.app/auth/callback`
+
+#### Common Issues
+
+**Getting 404 after Google login?**
+
+If your OAuth consent screen is in "Testing" mode, you must add yourself as a test user:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project
+3. Go to **APIs & Services** → **OAuth consent screen**
+4. Scroll down to **Test users** section
+5. Click **+ ADD USERS**
+6. Enter your Google email address
+7. Click **SAVE**
+8. Try signing in again
+
+**Wrong redirect URI error?**
+
+Make sure your redirect URI in Google Cloud Console exactly matches:
+- Development: `http://localhost:3000/auth/callback` (if testing locally)
+- Production: `https://YOUR-PROJECT.supabase.co/auth/v1/callback`
+
+You can add multiple redirect URIs - add both for development and production.
 
 ### 5. Run Development Server
 

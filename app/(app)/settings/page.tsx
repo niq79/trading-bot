@@ -8,10 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Calendar, Shield } from "lucide-react";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -92,9 +92,7 @@ export default async function SettingsPage() {
                 Permanently delete your account and all associated data. This action
                 cannot be undone.
               </p>
-              <Button variant="destructive" disabled>
-                Delete Account
-              </Button>
+              <DeleteAccountButton />
             </div>
           </CardContent>
         </Card>

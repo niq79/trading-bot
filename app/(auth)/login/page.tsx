@@ -42,7 +42,7 @@ export default function LoginPage() {
       }
 
       toast.success("Logged in successfully");
-      router.push("/app");
+      router.push("/");
       router.refresh();
     } catch {
       toast.error("An error occurred during login");
@@ -76,7 +76,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-bold">Welcome to Trading Bot</CardTitle>
           <CardDescription>
             Sign in to your account to continue
           </CardDescription>
