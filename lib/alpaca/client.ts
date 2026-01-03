@@ -74,14 +74,22 @@ interface OrderRequest {
   limit_price?: number;
 }
 
+// SAFETY: Prevent live trading - only paper trading allowed
+const FORCE_PAPER_TRADING = true;
+
 export class AlpacaClient {
   private baseUrl: string;
   private headers: HeadersInit;
 
   constructor(config: AlpacaConfig) {
-    this.baseUrl = config.paper
-      ? "https://paper-api.alpaca.markets"
-      : "https://api.alpaca.markets";
+    // SAFETY: Force paper trading regardless of config
+    const isPaper = FORCE_PAPER_TRADING || config.paper;
+    
+    if (!isPaper) {
+      throw new Error("SAFETY: Live trading is disabled. Only paper trading is allowed.");
+    }
+
+    this.baseUrl = "https://paper-api.alpaca.markets";
 
     this.headers = {
       "APCA-API-KEY-ID": config.apiKey,

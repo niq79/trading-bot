@@ -44,6 +44,18 @@ export async function POST(request: NextRequest) {
     // Get account info for response
     const account = await client.getAccount();
 
+    // SAFETY: Only allow paper trading accounts
+    if (account.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account is not active. Please use an active paper trading account." },
+        { status: 400 }
+      );
+    }
+
+    // SAFETY: Check if this is a paper trading account by verifying the API endpoint worked
+    // Paper trading keys only work with paper-api.alpaca.markets
+    // If we got here, we successfully connected to paper API, so it's a paper account
+
     // Encrypt credentials
     const encryptedApiKey = encrypt(apiKey);
     const encryptedApiSecret = encrypt(apiSecret);
