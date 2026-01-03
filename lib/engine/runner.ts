@@ -227,7 +227,13 @@ async function runStrategy(
   // 9. Execute orders
   for (const order of adjustedOrders) {
     try {
-      await alpacaClient.createOrder(order.symbol, order.notional, order.side);
+      await alpacaClient.createOrder({
+        symbol: order.symbol,
+        notional: order.notional.toString(),
+        side: order.side,
+        type: "market",
+        time_in_force: "day",
+      });
       orderResults.push({
         symbol: order.symbol,
         side: order.side,
