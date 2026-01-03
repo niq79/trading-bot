@@ -1,0 +1,101 @@
+I want you to scaffold a reusable Next.js 15 + Supabase + Tailwind + shadcn/ui starter repo for SaaS apps.
+
+You can base this project on this repo: https://github.com/guillaumeduhan/next-supabase-shadcn-auth
+
+Create the full project structure, boilerplate files, and placeholder components based on the following specification:
+
+1) Tech stack
+	•	Next.js 15 (App Router, RSC)
+	•	React 19
+	•	TypeScript
+	•	Tailwind CSS
+	•	shadcn/ui
+	•	Supabase (Auth, Postgres, RLS)
+	•	Edge-ready code organization
+
+
+2) Project structure
+
+app/
+  (marketing)/
+    page.tsx
+  (app)/
+    layout.tsx
+    page.tsx
+    settings/
+      page.tsx
+    account/
+      page.tsx
+  api/
+    health/route.ts
+
+components/
+  ui/                // shadcn components
+  layout/
+    app-header.tsx
+    app-sidebar.tsx
+    app-shell.tsx
+  shared/
+    page-header.tsx
+    empty-state.tsx
+    loading-state.tsx
+
+hooks/
+  use-user.ts
+
+lib/
+  supabase/
+    client.ts
+    server.ts
+    middleware.ts
+    types.ts
+  utils/
+    cn.ts
+    env.ts
+
+styles/
+  globals.css
+  tailwind.css
+
+public/
+  logo.svg
+  favicon.ico
+
+.env.example
+components.json       // shadcn config
+README.md
+
+
+3) Required features
+	•	Supabase client + server helpers for auth/session.
+	•	A working /login, /signup, and /logout flow using shadcn UI components.
+	•	Google OAuth support (placeholder button + instructions).
+	•	Protected routes under (app)/.
+	•	Basic “Account Settings” page with:
+	•	Update display name (supabase profiles table)
+	•	Update avatar (Supabase Storage placeholder)
+	•	Basic “Organization-ready” structure:
+	•	organization and organization_members tables (SQL templates only)
+	•	No full UI yet, just prepared SQL
+
+4) What I want as output
+	•	The full file tree with actual file contents generated.
+	•	Ready-to-run boilerplate code for:
+	•	Tailwind config
+	•	Supabase client/server
+	•	Auth UI
+	•	Protected layout
+	•	Example queries to Supabase
+	•	A minimal README with:
+	•	Setup instructions
+	•	Env vars required
+	•	How to enable Google OAuth
+	•	How to extend the starter
+
+5) Style / constraints
+	•	Clean, modern code.
+	•	Use RSC where appropriate, client components only where necessary.
+	•	Use shadcn/ui for buttons, inputs, cards, forms.
+	•	Keep logic modular and reusable.
+
+Generate everything in one response so I can copy-paste directly into a new repo.

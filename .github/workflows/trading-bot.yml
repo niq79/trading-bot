@@ -1,0 +1,96 @@
+name: Daily Trading Bot Run
+
+on:
+  schedule:
+    # Run at 15:55 ET (20:55 UTC) on weekdays only
+    # This is 5 minutes before market close
+    - cron: '55 20 * * 1-5'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  run-trading-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check if US market is open
+        id: market-check
+        run: |
+          # Get current date in US Eastern time
+          current_date=$(TZ="America/New_York" date +%Y-%m-%d)
+          
+          # List of US market holidays for 2024-2025
+          # Add more as needed
+          holidays=(
+            "2024-01-01"  # New Year's Day
+            "2024-01-15"  # MLK Day
+            "2024-02-19"  # Presidents Day
+            "2024-03-29"  # Good Friday
+            "2024-05-27"  # Memorial Day
+            "2024-06-19"  # Juneteenth
+            "2024-07-04"  # Independence Day
+            "2024-09-02"  # Labor Day
+            "2024-11-28"  # Thanksgiving
+            "2024-12-25"  # Christmas
+            "2025-01-01"  # New Year's Day
+            "2025-01-20"  # MLK Day
+            "2025-02-17"  # Presidents Day
+            "2025-04-18"  # Good Friday
+            "2025-05-26"  # Memorial Day
+            "2025-06-19"  # Juneteenth
+            "2025-07-04"  # Independence Day
+            "2025-09-01"  # Labor Day
+            "2025-11-27"  # Thanksgiving
+            "2025-12-25"  # Christmas
+          )
+          
+          is_holiday=false
+          for holiday in "${holidays[@]}"; do
+            if [ "$current_date" == "$holiday" ]; then
+              is_holiday=true
+              break
+            fi
+          done
+          
+          if [ "$is_holiday" == "true" ]; then
+            echo "Today is a US market holiday. Skipping trading run."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Market is open today. Proceeding with trading run."
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger trading bot run
+        if: steps.market-check.outputs.skip != 'true'
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST "${{ secrets.APP_URL }}/api/cron/run-all-users" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response code: $http_code"
+          echo "Response body: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: API returned status code $http_code"
+            exit 1
+          fi
+          
+          # Check if success is true in response
+          success=$(echo "$body" | jq -r '.success')
+          if [ "$success" != "true" ]; then
+            echo "Error: API returned success=false"
+            exit 1
+          fi
+          
+          echo "Trading bot run completed successfully!"
+          echo "Users processed: $(echo "$body" | jq -r '.usersProcessed')"
+          echo "Total orders: $(echo "$body" | jq -r '.totalOrders')"
+
+      - name: Skip notification
+        if: steps.market-check.outputs.skip == 'true'
+        run: |
+          echo "Trading run skipped due to market holiday."
