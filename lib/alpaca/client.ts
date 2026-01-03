@@ -224,6 +224,113 @@ export class AlpacaClient {
     
     return validSymbols;
   }
+
+  /**
+   * Get historical bars (price data) for a symbol
+   * Uses the Alpaca Data API (data.alpaca.markets)
+   */
+  async getBars(
+    symbol: string,
+    params: {
+      timeframe?: string; // "1Day", "1Hour", etc.
+      start?: string; // ISO date string
+      end?: string; // ISO date string
+      limit?: number;
+    } = {}
+  ): Promise<Bar[]> {
+    const {
+      timeframe = "1Day",
+      limit = 30,
+    } = params;
+
+    // Calculate start date (default: 30 days ago)
+    const end = params.end || new Date().toISOString();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (limit + 5)); // Add buffer for weekends/holidays
+    const start = params.start || startDate.toISOString();
+
+    const queryParams = new URLSearchParams({
+      timeframe,
+      start,
+      end,
+      limit: limit.toString(),
+    });
+
+    // Use Alpaca Data API (different base URL)
+    const dataUrl = "https://data.alpaca.markets";
+    const response = await fetch(
+      `${dataUrl}/v2/stocks/${symbol}/bars?${queryParams}`,
+      {
+        headers: this.headers,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Alpaca Data API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.bars || [];
+  }
+
+  /**
+   * Get bars for multiple symbols at once
+   */
+  async getMultiBars(
+    symbols: string[],
+    params: {
+      timeframe?: string;
+      start?: string;
+      end?: string;
+      limit?: number;
+    } = {}
+  ): Promise<Record<string, Bar[]>> {
+    const {
+      timeframe = "1Day",
+      limit = 30,
+    } = params;
+
+    const end = params.end || new Date().toISOString();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (limit + 5));
+    const start = params.start || startDate.toISOString();
+
+    const queryParams = new URLSearchParams({
+      symbols: symbols.join(","),
+      timeframe,
+      start,
+      end,
+      limit: limit.toString(),
+    });
+
+    const dataUrl = "https://data.alpaca.markets";
+    const response = await fetch(
+      `${dataUrl}/v2/stocks/bars?${queryParams}`,
+      {
+        headers: this.headers,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Alpaca Data API error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.bars || {};
+  }
+}
+
+export interface Bar {
+  t: string; // timestamp
+  o: number; // open
+  h: number; // high
+  l: number; // low
+  c: number; // close
+  v: number; // volume
+  n: number; // number of trades
+  vw: number; // volume weighted average price
 }
 
 export type {

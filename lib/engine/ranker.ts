@@ -1,4 +1,4 @@
-import { AlpacaClient } from "@/lib/alpaca/client";
+import { AlpacaClient, Bar } from "@/lib/alpaca/client";
 import { UniverseConfig, StrategyParams } from "@/types/strategy";
 
 export interface RankingConfig {
@@ -145,13 +145,30 @@ export async function rankSymbols(
 ): Promise<RankingResult> {
   const rankedSymbols: RankedSymbol[] = [];
 
+  // Fetch bars for all symbols at once (more efficient)
+  let allBars: Record<string, Bar[]> = {};
+  try {
+    allBars = await alpacaClient.getMultiBars(symbols, { limit: 60 });
+  } catch (error) {
+    console.error("Error fetching bars:", error);
+    // Fall back to empty, will result in no ranking
+  }
+
   for (const symbol of symbols) {
+    const bars = allBars[symbol] || [];
+    
+    // Skip symbols with insufficient data
+    if (bars.length < 5) {
+      console.warn(`Insufficient data for ${symbol}, skipping`);
+      continue;
+    }
+
     const metrics: Record<string, number> = {};
     let totalScore = 0;
     let totalWeight = 0;
 
     for (const factor of rankingConfig.factors) {
-      const value = await getFactorValue(symbol, factor.factor, alpacaClient);
+      const value = getFactorValue(bars, factor.factor);
 
       if (value !== null) {
         metrics[factor.factor] = value;
@@ -185,43 +202,66 @@ export async function rankSymbols(
 }
 
 /**
- * Get a factor value for a symbol
- * TODO: Implement getBars method in AlpacaClient
+ * Get a factor value for a symbol using its price bars
  */
-async function getFactorValue(
-  symbol: string,
-  factor: string,
-  alpacaClient: AlpacaClient
-): Promise<number | null> {
-  // TODO: Implement actual factor calculations once AlpacaClient has getBars
-  console.warn(`Factor calculation for ${factor} on ${symbol} not yet implemented`);
-  return Math.random(); // Temporary random value for testing
+function getFactorValue(
+  bars: Bar[],
+  factor: string
+): number | null {
+  if (bars.length === 0) return null;
+
+  switch (factor) {
+    case "momentum_5d":
+      return calculateMomentum(bars, 5);
+    case "momentum_10d":
+      return calculateMomentum(bars, 10);
+    case "momentum_20d":
+    case "momentum":
+    case "return":
+      return calculateMomentum(bars, 20);
+    case "momentum_60d":
+      return calculateMomentum(bars, 60);
+    case "volatility":
+      return calculateVolatility(bars);
+    case "volume":
+      return calculateAverageVolume(bars);
+    case "rsi":
+      return calculateRSI(bars);
+    default:
+      console.warn(`Unknown factor: ${factor}`);
+      return null;
+  }
 }
 
 /**
  * Calculate momentum (simple return over period)
  */
-function calculateMomentum(bars: { c: number }[], period: number): number {
-  if (bars.length < period) {
-    period = bars.length;
-  }
-
-  const startPrice = bars[bars.length - period].c;
+function calculateMomentum(bars: Bar[], period: number): number {
+  if (bars.length < 2) return 0;
+  
+  const effectivePeriod = Math.min(period, bars.length);
+  const startPrice = bars[bars.length - effectivePeriod].c;
   const endPrice = bars[bars.length - 1].c;
 
+  if (startPrice === 0) return 0;
   return ((endPrice - startPrice) / startPrice) * 100;
 }
 
 /**
  * Calculate volatility (standard deviation of returns)
  */
-function calculateVolatility(bars: { c: number }[]): number {
+function calculateVolatility(bars: Bar[]): number {
+  if (bars.length < 2) return 0;
+  
   const returns: number[] = [];
 
   for (let i = 1; i < bars.length; i++) {
+    if (bars[i - 1].c === 0) continue;
     const dailyReturn = (bars[i].c - bars[i - 1].c) / bars[i - 1].c;
     returns.push(dailyReturn);
   }
+
+  if (returns.length === 0) return 0;
 
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
   const squaredDiffs = returns.map((r) => Math.pow(r - mean, 2));
@@ -233,7 +273,8 @@ function calculateVolatility(bars: { c: number }[]): number {
 /**
  * Calculate average volume
  */
-function calculateAverageVolume(bars: { v: number }[]): number {
+function calculateAverageVolume(bars: Bar[]): number {
+  if (bars.length === 0) return 0;
   const totalVolume = bars.reduce((sum, bar) => sum + bar.v, 0);
   return totalVolume / bars.length;
 }
@@ -241,7 +282,7 @@ function calculateAverageVolume(bars: { v: number }[]): number {
 /**
  * Calculate RSI (Relative Strength Index)
  */
-function calculateRSI(bars: { c: number }[], period: number = 14): number {
+function calculateRSI(bars: Bar[], period: number = 14): number {
   if (bars.length < period + 1) {
     return 50; // Default neutral value
   }
