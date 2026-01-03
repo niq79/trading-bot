@@ -8,6 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Loader2, Play, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Info } from "lucide-react";
 
+// Helper function to format currency with thousand separators
+function formatCurrency(value: number): string {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 interface TestRunButtonProps {
   strategyId: string;
   strategyName: string;
@@ -48,6 +56,11 @@ interface TestResult {
     equity: number;
     buying_power: number;
     cash: number;
+  };
+  strategy?: {
+    allocation_pct: number;
+    rebalance_fraction: number;
+    allocated_equity: number;
   };
   universe: {
     symbols: string[];
@@ -162,17 +175,39 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Equity</p>
-                  <p className="text-2xl font-bold">${result.account.equity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-2xl font-bold">${formatCurrency(result.account.equity)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Buying Power</p>
-                  <p className="text-2xl font-bold">${result.account.buying_power.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-2xl font-bold">${formatCurrency(result.account.buying_power)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Cash</p>
-                  <p className="text-2xl font-bold">${result.account.cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-2xl font-bold">${formatCurrency(result.account.cash)}</p>
                 </div>
               </div>
+              {result.strategy && (
+                <div className="mt-4 pt-4 border-t">
+                  <h4 className="text-sm font-medium mb-3">Strategy Parameters Applied</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Allocation</p>
+                      <p className="text-lg font-semibold">{result.strategy.allocation_pct}%</p>
+                      <p className="text-xs text-muted-foreground">${formatCurrency(result.strategy.allocated_equity)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Rebalance Fraction</p>
+                      <p className="text-lg font-semibold">{(result.strategy.rebalance_fraction * 100).toFixed(0)}%</p>
+                      <p className="text-xs text-muted-foreground">of diff per run</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Top N Symbols</p>
+                      <p className="text-lg font-semibold">{result.ranking.topN}</p>
+                      <p className="text-xs text-muted-foreground">held positions</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -251,16 +286,16 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                       <TableRow key={pos.symbol}>
                         <TableCell className="font-bold">{pos.symbol}</TableCell>
                         <TableCell className="text-right">{pos.qty.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">${pos.current_price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${formatCurrency(pos.current_price)}</TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${pos.market_value.toFixed(2)}
+                          ${formatCurrency(pos.market_value)}
                         </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-bold">
                       <TableCell colSpan={3}>Total</TableCell>
                       <TableCell className="text-right">
-                        ${result.currentPositions.reduce((s, p) => s + p.market_value, 0).toFixed(2)}
+                        ${formatCurrency(result.currentPositions.reduce((s, p) => s + p.market_value, 0))}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -293,11 +328,11 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                       return (
                         <TableRow key={target.symbol}>
                           <TableCell className="font-bold">{target.symbol}</TableCell>
-                          <TableCell className="text-right">${target.currentValue.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${target.targetValue.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${formatCurrency(target.currentValue)}</TableCell>
+                          <TableCell className="text-right">${formatCurrency(target.targetValue)}</TableCell>
                           <TableCell className="text-right">{(target.targetWeight * 100).toFixed(1)}%</TableCell>
                           <TableCell className={`text-right font-semibold ${change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : ""}`}>
-                            {change > 0 ? "+" : ""}{change.toFixed(2)}
+                            {change > 0 ? "+$" : "-$"}{formatCurrency(Math.abs(change))}
                           </TableCell>
                         </TableRow>
                       );
@@ -349,7 +384,7 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${Math.abs(order.notional).toFixed(2)}
+                          ${formatCurrency(Math.abs(order.notional))}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{order.reason}</TableCell>
                       </TableRow>
@@ -357,11 +392,10 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                     <TableRow className="font-bold">
                       <TableCell colSpan={2}>Net Change</TableCell>
                       <TableCell className="text-right">
-                        $
-                        {(
+                        ${formatCurrency(
                           result.orders.filter((o) => o.side === "buy").reduce((s, o) => s + o.notional, 0) -
                           result.orders.filter((o) => o.side === "sell").reduce((s, o) => s + o.notional, 0)
-                        ).toFixed(2)}
+                        )}
                       </TableCell>
                       <TableCell></TableCell>
                     </TableRow>

@@ -16,17 +16,26 @@ export interface RebalanceResult {
 
 /**
  * Calculate the orders needed to rebalance from current to target positions
+ * @param targets - Target positions to achieve
+ * @param currentPositions - Current positions
+ * @param rebalanceFraction - Fraction of difference to trade (0.25 = 25%)
+ * @param minTradeSize - Minimum trade size in dollars
  */
 export function calculateRebalanceOrders(
   targets: TargetPosition[],
   currentPositions: CurrentPosition[],
+  rebalanceFraction: number = 1.0, // Default to full rebalance
   minTradeSize: number = 1 // Minimum $1 trade
 ): RebalanceResult {
   const orders: RebalanceOrder[] = [];
   const targetSymbols = new Set(targets.map((t) => t.symbol));
   const symbolsToClose: string[] = [];
 
+  // Clamp rebalance fraction between 0 and 1
+  const fraction = Math.max(0, Math.min(1, rebalanceFraction));
+
   // First, identify positions to close (not in targets)
+  // Note: Positions not in target universe are closed fully regardless of rebalance_fraction
   for (const position of currentPositions) {
     if (!targetSymbols.has(position.symbol) && position.market_value > 0) {
       symbolsToClose.push(position.symbol);
@@ -41,7 +50,10 @@ export function calculateRebalanceOrders(
 
   // Calculate buy and sell orders for target positions
   for (const target of targets) {
-    const diff = target.targetValue - target.currentValue;
+    const fullDiff = target.targetValue - target.currentValue;
+    
+    // Apply rebalance fraction to the difference
+    const diff = fullDiff * fraction;
 
     // Skip if difference is too small
     if (Math.abs(diff) < minTradeSize) {
@@ -53,14 +65,14 @@ export function calculateRebalanceOrders(
         symbol: target.symbol,
         side: "buy",
         notional: diff,
-        reason: `Increase position to ${(target.targetWeight * 100).toFixed(1)}% target`,
+        reason: `Increase position toward ${(target.targetWeight * 100).toFixed(1)}% target (${(fraction * 100).toFixed(0)}% step)`,
       });
     } else if (diff < 0) {
       orders.push({
         symbol: target.symbol,
         side: "sell",
         notional: Math.abs(diff),
-        reason: `Reduce position to ${(target.targetWeight * 100).toFixed(1)}% target`,
+        reason: `Reduce position toward ${(target.targetWeight * 100).toFixed(1)}% target (${(fraction * 100).toFixed(0)}% step)`,
       });
     }
   }

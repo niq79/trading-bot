@@ -219,7 +219,9 @@ async function runStrategy(
   );
 
   // 7. Calculate rebalance orders
-  const { orders } = calculateRebalanceOrders(targets, currentPositions);
+  // Get rebalance_fraction from params (default to 0.25 = 25%)
+  const rebalanceFraction = params.rebalance_fraction ?? 0.25;
+  const { orders } = calculateRebalanceOrders(targets, currentPositions, rebalanceFraction);
 
   // 8. Validate orders against buying power
   const { adjustedOrders } = validateOrders(orders, buyingPower);

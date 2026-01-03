@@ -296,12 +296,14 @@ export class AlpacaClient {
     startDate.setDate(startDate.getDate() - (limit + 5));
     const start = params.start || startDate.toISOString();
 
+    // Use IEX feed instead of SIP - IEX is free for paper trading accounts
     const queryParams = new URLSearchParams({
       symbols: symbols.join(","),
       timeframe,
       start,
       end,
       limit: limit.toString(),
+      feed: "iex", // Use IEX feed (free) instead of SIP (paid)
     });
 
     const dataUrl = "https://data.alpaca.markets";

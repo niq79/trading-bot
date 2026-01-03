@@ -32,6 +32,7 @@ export async function POST(
       data: {
         id: string;
         name: string;
+        allocation_pct: number;
         params_json: Record<string, unknown>;
         universe_config_json: Record<string, unknown>;
       } | null;
@@ -67,7 +68,13 @@ export async function POST(
       ranking_metric: string;
       long_n: number;
       rebalance_fraction: number;
+      max_weight_per_symbol: number;
     };
+    
+    // Get rebalance_fraction from strategy (stored at root level for DB backwards compat)
+    const rebalanceFraction = (strategy as unknown as { rebalance_fraction?: number }).rebalance_fraction 
+      ?? params.rebalance_fraction 
+      ?? 0.25;
     const universeConfig = strategy.universe_config_json as {
       type: string;
       predefined_list?: string;
@@ -113,6 +120,10 @@ export async function POST(
     const buyingPower = parseFloat(account.buying_power);
     const cash = parseFloat(account.cash);
 
+    // Calculate allocated equity based on strategy's allocation percentage
+    const allocationPct = strategy.allocation_pct || 100;
+    const allocatedEquity = totalEquity * (allocationPct / 100);
+
     const currentPositions: CurrentPosition[] = positions.map((p) => ({
       symbol: p.symbol,
       qty: parseFloat(p.qty),
@@ -131,19 +142,34 @@ export async function POST(
     const { targets } = calculateTargetPositions(
       rankedSymbols,
       executionConfig,
-      totalEquity,
+      allocatedEquity, // Use allocated portion, not total equity
       currentPositions,
       []
     );
 
-    // 5. Calculate rebalance orders
+    // 5. Calculate rebalance orders (applying rebalance_fraction)
     const { orders } = calculateRebalanceOrders(
       targets,
-      currentPositions
+      currentPositions,
+      rebalanceFraction // Only trade this fraction of the difference
     );
 
     // 6. Validate orders against buying power
     const { adjustedOrders } = validateOrders(orders, buyingPower);
+
+    // Debug info
+    console.log("=== TEST RUN DEBUG ===");
+    console.log("Account equity:", totalEquity);
+    console.log("Allocated equity:", allocatedEquity, `(${allocationPct}%)`);
+    console.log("Rebalance fraction:", rebalanceFraction);
+    console.log("Buying power:", buyingPower);
+    console.log("Universe symbols:", universeSymbols.length);
+    console.log("Ranked symbols:", rankedSymbols.length);
+    console.log("Target positions:", targets.length);
+    console.log("Targets:", targets.map(t => ({ symbol: t.symbol, targetValue: t.targetValue, currentValue: t.currentValue })));
+    console.log("Raw orders:", orders);
+    console.log("Adjusted orders:", adjustedOrders);
+    console.log("=== END DEBUG ===");
 
     // 7. Generate analysis
     const totalBuyValue = adjustedOrders
@@ -159,6 +185,8 @@ export async function POST(
     const analysis = {
       summary: `Would ${adjustedOrders.length === 0 ? "place NO orders" : `place ${adjustedOrders.length} orders`} (${adjustedOrders.filter(o => o.side === "buy").length} buys, ${adjustedOrders.filter(o => o.side === "sell").length} sells)`,
       details: [
+        `Strategy allocation: ${allocationPct}% of portfolio ($${allocatedEquity.toLocaleString()})`,
+        `Rebalance fraction: ${(rebalanceFraction * 100).toFixed(0)}% (trades ${(rebalanceFraction * 100).toFixed(0)}% of difference each run)`,
         `Universe: ${universeSymbols.length} symbols evaluated`,
         `Top ${params.long_n} selected: ${selectedSymbols.map(s => s.symbol).join(", ") || "None"}`,
         selectedSymbols.length > 0
@@ -182,6 +210,11 @@ export async function POST(
         equity: totalEquity,
         buying_power: buyingPower,
         cash,
+      },
+      strategy: {
+        allocation_pct: allocationPct,
+        rebalance_fraction: rebalanceFraction,
+        allocated_equity: allocatedEquity,
       },
       universe: {
         symbols: universeSymbols,
