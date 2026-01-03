@@ -9,9 +9,14 @@ export interface StrategyParams {
 }
 
 export interface SignalCondition {
-  signal_source: string;
-  action: "position_modifier" | "conditional_gate" | "direct_trigger";
-  conditions: SignalConditionRule[];
+  source_id: string;
+  action_type: "position_modifier" | "conditional_gate" | "direct_trigger";
+  operator: "gt" | "gte" | "lt" | "lte" | "eq" | "neq";
+  threshold: number;
+  action_params: {
+    multiplier?: number;
+    action?: "skip_trading" | "allow_trading";
+  };
 }
 
 export interface SignalConditionRule {
