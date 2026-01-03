@@ -157,20 +157,6 @@ export async function POST(
     // 6. Validate orders against buying power
     const { adjustedOrders } = validateOrders(orders, buyingPower);
 
-    // Debug info
-    console.log("=== TEST RUN DEBUG ===");
-    console.log("Account equity:", totalEquity);
-    console.log("Allocated equity:", allocatedEquity, `(${allocationPct}%)`);
-    console.log("Rebalance fraction:", rebalanceFraction);
-    console.log("Buying power:", buyingPower);
-    console.log("Universe symbols:", universeSymbols.length);
-    console.log("Ranked symbols:", rankedSymbols.length);
-    console.log("Target positions:", targets.length);
-    console.log("Targets:", targets.map(t => ({ symbol: t.symbol, targetValue: t.targetValue, currentValue: t.currentValue })));
-    console.log("Raw orders:", orders);
-    console.log("Adjusted orders:", adjustedOrders);
-    console.log("=== END DEBUG ===");
-
     // 7. Generate analysis
     const totalBuyValue = adjustedOrders
       .filter((o) => o.side === "buy")

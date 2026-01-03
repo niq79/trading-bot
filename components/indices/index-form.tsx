@@ -131,10 +131,6 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
         toast.info("All symbols already added or invalid");
       }
 
-      if (invalidSymbols.length > 0) {
-        console.log("Invalid symbols:", invalidSymbols);
-      }
-
       setBulkInput("");
     } catch (error) {
       console.error("Error validating symbols:", error);
