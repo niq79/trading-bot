@@ -17,6 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // @ts-expect-error - synthetic_indices not in generated types
     const { data: index, error } = await supabase
       .from("synthetic_indices")
       .select("*")
@@ -88,6 +89,7 @@ export async function PATCH(
       }
     }
 
+    // @ts-expect-error - synthetic_indices not in generated types
     const { data: index, error } = await supabase
       .from("synthetic_indices")
       .update({
@@ -134,6 +136,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // @ts-expect-error - synthetic_indices not in generated types
     const { error } = await supabase
       .from("synthetic_indices")
       .delete()
