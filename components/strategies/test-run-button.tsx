@@ -23,6 +23,7 @@ interface TestRunButtonProps {
 
 interface RankedSymbol {
   symbol: string;
+  side: 'long' | 'short';
   score: number;
   metrics: Record<string, number>;
 }
@@ -36,6 +37,7 @@ interface Position {
 
 interface TargetPosition {
   symbol: string;
+  side: 'long' | 'short';
   targetValue: number;
   targetWeight: number;
   currentValue: number;
@@ -245,6 +247,7 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                   <TableRow>
                     <TableHead>Rank</TableHead>
                     <TableHead>Symbol</TableHead>
+                    <TableHead>Side</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Metrics</TableHead>
@@ -252,11 +255,17 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                 </TableHeader>
                 <TableBody>
                   {result.ranking.rankedSymbols.map((symbol, idx) => {
-                    const isSelected = idx < result.ranking.topN;
+                    const isLong = symbol.side === 'long';
+                    const isShort = symbol.side === 'short';
+                    const isSelected = isLong || isShort;
                     return (
                       <TableRow key={symbol.symbol} className={isSelected ? "bg-muted/50" : ""}>
                         <TableCell className="font-mono">{idx + 1}</TableCell>
                         <TableCell className="font-bold">{symbol.symbol}</TableCell>
+                        <TableCell>
+                          {isLong && <Badge variant="default">Long</Badge>}
+                          {isShort && <Badge variant="destructive">Short</Badge>}
+                        </TableCell>
                         <TableCell>{symbol.score.toFixed(2)}</TableCell>
                         <TableCell>
                           {isSelected ? (
@@ -336,6 +345,7 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                   <TableHeader>
                     <TableRow>
                       <TableHead>Symbol</TableHead>
+                      <TableHead>Side</TableHead>
                       <TableHead className="text-right">Current Value</TableHead>
                       <TableHead className="text-right">Target Value</TableHead>
                       <TableHead className="text-right">Weight</TableHead>
@@ -345,12 +355,18 @@ export function TestRunButton({ strategyId, strategyName }: TestRunButtonProps) 
                   <TableBody>
                     {result.targetPositions.map((target) => {
                       const change = target.targetValue - target.currentValue;
+                      const isShort = target.side === 'short';
                       return (
                         <TableRow key={target.symbol}>
                           <TableCell className="font-bold">{target.symbol}</TableCell>
-                          <TableCell className="text-right">${formatCurrency(target.currentValue)}</TableCell>
-                          <TableCell className="text-right">${formatCurrency(target.targetValue)}</TableCell>
-                          <TableCell className="text-right">{(target.targetWeight * 100).toFixed(1)}%</TableCell>
+                          <TableCell>
+                            <Badge variant={isShort ? "destructive" : "default"}>
+                              {target.side === 'long' ? 'Long' : 'Short'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">${formatCurrency(Math.abs(target.currentValue))}</TableCell>
+                          <TableCell className="text-right">${formatCurrency(Math.abs(target.targetValue))}</TableCell>
+                          <TableCell className="text-right">{(Math.abs(target.targetWeight) * 100).toFixed(1)}%</TableCell>
                           <TableCell className={`text-right font-semibold ${change > 0 ? "text-green-600" : change < 0 ? "text-red-600" : ""}`}>
                             {change > 0 ? "+$" : "-$"}{formatCurrency(Math.abs(change))}
                           </TableCell>

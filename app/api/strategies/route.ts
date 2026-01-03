@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
 
     const { data: strategy, error} = await supabase
       .from("strategies")
-      // @ts-expect-error - TODO: Update database types
       .insert({
         user_id: user.id,
         name,
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
         universe_type: universe_type ?? "predefined",
         universe_config_json,
         is_enabled,
-      })
+      } as any)
       .select()
       .single();
 

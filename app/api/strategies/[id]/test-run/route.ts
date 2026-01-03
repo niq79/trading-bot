@@ -108,6 +108,9 @@ export async function POST(
     // 2. Rank symbols
     const rankingConfig = {
       factors: [{ factor: params.ranking_metric, weight: 1 }],
+      lookback_days: params.lookback_days,
+      top_n: params.long_n,
+      short_n: params.short_n || 0,
     };
     const { rankedSymbols } = await rankSymbols(
       universeSymbols,

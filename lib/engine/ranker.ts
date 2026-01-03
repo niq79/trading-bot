@@ -6,11 +6,15 @@ export interface RankingConfig {
     factor: string;
     weight: number;
   }>;
+  lookback_days?: number;
+  top_n?: number;  // Long positions
+  short_n?: number; // Short positions
 }
 
 export interface RankedSymbol {
   symbol: string;
   score: number;
+  side: 'long' | 'short'; // Position side
   metrics: Record<string, number>;
 }
 
@@ -140,10 +144,13 @@ export async function rankSymbols(
 ): Promise<RankingResult> {
   const rankedSymbols: RankedSymbol[] = [];
 
+  // Use lookback_days from config, default to 60 if not specified
+  const lookbackDays = rankingConfig.lookback_days ?? 60;
+
   // Fetch bars for all symbols at once (more efficient)
   let allBars: Record<string, Bar[]> = {};
   try {
-    allBars = await alpacaClient.getMultiBars(symbols, { limit: 60 });
+    allBars = await alpacaClient.getMultiBars(symbols, { limit: lookbackDays });
   } catch {
     // Fall back to empty bars - will result in no ranking for these symbols
   }
@@ -188,8 +195,37 @@ export async function rankSymbols(
   // Sort by score descending
   rankedSymbols.sort((a, b) => b.score - a.score);
 
+  // Select top N for longs and bottom N for shorts
+  const result: RankedSymbol[] = [];
+  
+  const topN = rankingConfig.top_n ?? 0;
+  const shortN = rankingConfig.short_n ?? 0;
+  const totalSymbols = rankedSymbols.length;
+
+  // Ensure no overlap: if top_n + short_n > total, adjust
+  const actualTopN = Math.min(topN, totalSymbols);
+  const actualShortN = Math.min(shortN, Math.max(0, totalSymbols - actualTopN));
+
+  // Add top N as long positions
+  if (actualTopN > 0) {
+    const longs = rankedSymbols.slice(0, actualTopN).map(s => ({
+      ...s,
+      side: 'long' as const
+    }));
+    result.push(...longs);
+  }
+
+  // Add bottom N as short positions (no overlap with longs)
+  if (actualShortN > 0) {
+    const shorts = rankedSymbols.slice(-actualShortN).map(s => ({
+      ...s,
+      side: 'short' as const
+    }));
+    result.push(...shorts);
+  }
+
   return {
-    rankedSymbols,
+    rankedSymbols: result,
     timestamp: new Date().toISOString(),
   };
 }

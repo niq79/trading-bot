@@ -122,7 +122,6 @@ export async function runStrategiesForUser(
   }
 
   // Log the run
-  // @ts-expect-error - TODO: Update database types
   await supabase.from("strategy_runs").insert({
     user_id: userId,
     ran_at: new Date().toISOString(),
@@ -130,7 +129,7 @@ export async function runStrategiesForUser(
     orders_placed: totalOrdersPlaced,
     status: errors.length > 0 ? "partial" : "success",
     log: JSON.stringify({ results, errors }),
-  });
+  } as any);
 
   return {
     userId,
@@ -190,9 +189,15 @@ async function runStrategy(
   );
 
   // 4. Rank symbols
+  const rankingConfig = {
+    factors: params.ranking.factors,
+    lookback_days: params.ranking.lookback_days,
+    top_n: params.execution.top_n,
+    short_n: params.execution.short_n || 0,
+  };
   const { rankedSymbols } = await rankSymbols(
     universeSymbols,
-    params.ranking,
+    rankingConfig,
     alpacaClient
   );
 

@@ -71,12 +71,11 @@ export async function POST(request: NextRequest) {
       // Update existing credentials
       const { error } = await supabase
         .from("alpaca_credentials")
-        // @ts-expect-error - TODO: Update database types
         .update({
           api_key_encrypted: encryptedApiKey,
           api_secret_encrypted: encryptedApiSecret,
           is_paper: true,
-        })
+        } as any)
         .eq("user_id", user.id);
 
       if (error) {
@@ -90,13 +89,12 @@ export async function POST(request: NextRequest) {
       // Insert new credentials
       const { error } = await supabase
         .from("alpaca_credentials")
-        // @ts-expect-error - TODO: Update database types
         .insert({
           user_id: user.id,
           api_key_encrypted: encryptedApiKey,
           api_secret_encrypted: encryptedApiSecret,
           is_paper: true,
-        });
+        } as any);
 
       if (error) {
         console.error("Error inserting credentials:", error);

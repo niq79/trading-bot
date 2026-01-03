@@ -4,6 +4,7 @@ import { SignalReading } from "@/types/signal";
 
 export interface TargetPosition {
   symbol: string;
+  side: 'long' | 'short';
   targetWeight: number;
   targetValue: number;
   currentValue: number;
@@ -70,56 +71,21 @@ export function calculateTargetPositions(
   );
   const investableAmount = baseInvestable * positionModifier;
 
-  // Select top N symbols
-  const topSymbols = rankedSymbols.slice(0, executionConfig.top_n);
+  // Separate longs and shorts
+  const longSymbols = rankedSymbols.filter(s => s.side === 'long');
+  const shortSymbols = rankedSymbols.filter(s => s.side === 'short');
 
-  // Calculate weights based on weighting scheme
-  let weights = calculateWeights(topSymbols, executionConfig.weight_scheme);
+  // Calculate weights for longs
+  let longWeights = calculateWeights(longSymbols, executionConfig.weight_scheme);
+  
+  // Calculate weights for shorts
+  let shortWeights = calculateWeights(shortSymbols, executionConfig.weight_scheme);
 
-  // Apply max weight per symbol cap and redistribute excess
+  // Apply max weight per symbol cap and redistribute excess for longs
   const maxWeight = executionConfig.max_weight_per_symbol;
   if (maxWeight < 1) {
-    let redistributionNeeded = true;
-    let iterations = 0;
-    const maxIterations = 10; // Prevent infinite loops
-
-    while (redistributionNeeded && iterations < maxIterations) {
-      redistributionNeeded = false;
-      let excessWeight = 0;
-      const cappedIndices: number[] = [];
-
-      // Find symbols exceeding max weight and calculate excess
-      weights.forEach((w, i) => {
-        if (w > maxWeight) {
-          excessWeight += w - maxWeight;
-          weights[i] = maxWeight;
-          cappedIndices.push(i);
-          redistributionNeeded = true;
-        }
-      });
-
-      // Redistribute excess weight to uncapped symbols
-      if (excessWeight > 0) {
-        const uncappedIndices = weights
-          .map((w, i) => (w < maxWeight && !cappedIndices.includes(i) ? i : -1))
-          .filter((i) => i >= 0);
-
-        if (uncappedIndices.length > 0) {
-          const sharePerUncapped = excessWeight / uncappedIndices.length;
-          uncappedIndices.forEach((i) => {
-            weights[i] += sharePerUncapped;
-          });
-        }
-      }
-
-      iterations++;
-    }
-
-    // Normalize to ensure sum is exactly 1
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-    if (totalWeight > 0) {
-      weights = weights.map((w) => w / totalWeight);
-    }
+    longWeights = applyMaxWeightCap(longWeights, maxWeight);
+    shortWeights = applyMaxWeightCap(shortWeights, maxWeight);
   }
 
   // Create position map for current positions
@@ -128,14 +94,15 @@ export function calculateTargetPositions(
     positionMap.set(pos.symbol, pos);
   }
 
-  // Calculate target positions
-  const targets: TargetPosition[] = topSymbols.map((symbol, index) => {
-    const weight = weights[index];
+  // Calculate target positions for longs
+  const longTargets: TargetPosition[] = longSymbols.map((symbol, index) => {
+    const weight = longWeights[index];
     const targetValue = investableAmount * weight;
     const currentPos = positionMap.get(symbol.symbol);
 
     return {
       symbol: symbol.symbol,
+      side: 'long' as const,
       targetWeight: weight,
       targetValue,
       currentValue: currentPos?.market_value || 0,
@@ -143,6 +110,25 @@ export function calculateTargetPositions(
       score: symbol.score,
     };
   });
+
+  // Calculate target positions for shorts (negative values)
+  const shortTargets: TargetPosition[] = shortSymbols.map((symbol, index) => {
+    const weight = shortWeights[index];
+    const targetValue = -(investableAmount * weight); // Negative for shorts
+    const currentPos = positionMap.get(symbol.symbol);
+
+    return {
+      symbol: symbol.symbol,
+      side: 'short' as const,
+      targetWeight: weight,
+      targetValue,
+      currentValue: currentPos?.market_value || 0,
+      currentShares: currentPos?.qty || 0,
+      score: symbol.score,
+    };
+  });
+
+  const targets = [...longTargets, ...shortTargets];
 
   return {
     targets,
@@ -273,4 +259,59 @@ function evaluateCondition(
     default:
       return false;
   }
+}
+
+/**
+ * Apply max weight cap to weights array and redistribute excess
+ */
+function applyMaxWeightCap(weights: number[], maxWeight: number): number[] {
+  let result = [...weights];
+  let redistributionNeeded = true;
+  let iterations = 0;
+  const maxIterations = 10; // Prevent infinite loops
+
+  while (redistributionNeeded && iterations < maxIterations) {
+    redistributionNeeded = false;
+    let excessWeight = 0;
+    const cappedIndices: number[] = [];
+
+    // Find symbols exceeding max weight and calculate excess
+    result.forEach((w, i) => {
+      if (w > maxWeight) {
+        excessWeight += w - maxWeight;
+        result[i] = maxWeight;
+        cappedIndices.push(i);
+        redistributionNeeded = true;
+      }
+    });
+
+    // Redistribute excess weight to uncapped symbols
+    if (excessWeight > 0) {
+      const uncappedIndices = result
+        .map((w, i) => (w < maxWeight && !cappedIndices.includes(i) ? i : -1))
+        .filter((i) => i >= 0);
+
+      if (uncappedIndices.length > 0) {
+        const sharePerUncapped = excessWeight / uncappedIndices.length;
+        uncappedIndices.forEach((i) => {
+          result[i] += sharePerUncapped;
+        });
+      } else {
+        // All positions are capped - keep them capped, don't normalize
+        // This ensures max_weight is respected even if sum < 1
+        return result;
+      }
+    }
+
+    iterations++;
+  }
+
+  // Normalize to ensure sum is exactly 1
+  // Only normalize if we didn't hit the "all capped" case above
+  const totalWeight = result.reduce((sum, w) => sum + w, 0);
+  if (totalWeight > 0) {
+    result = result.map((w) => w / totalWeight);
+  }
+
+  return result;
 }

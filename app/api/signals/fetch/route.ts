@@ -44,14 +44,13 @@ export async function GET(request: Request) {
     const result = await fetchSignal(typedSource.type, typedSource.config_json);
 
     // Store reading in database
-    // @ts-expect-error - TODO: Update database types
     await supabase.from("signal_readings").insert({
       source_id: sourceId,
       user_id: user.id,
       value: result.value,
       raw_response: result.raw,
       fetched_at: result.fetchedAt,
-    });
+    } as any);
 
     return NextResponse.json(result);
   } catch (error) {

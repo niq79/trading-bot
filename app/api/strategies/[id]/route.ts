@@ -76,8 +76,7 @@ export async function PATCH(
 
     const { data: strategy, error } = await supabase
       .from("strategies")
-      // @ts-expect-error - TODO: Update database types
-      .update(body)
+      .update(body as any)
       .eq("id", id)
       .eq("user_id", user.id)
       .select()

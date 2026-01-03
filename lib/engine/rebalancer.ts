@@ -60,19 +60,24 @@ export function calculateRebalanceOrders(
       continue;
     }
 
+    // Determine position type for reason
+    const positionType = target.side === 'short' ? 'short' : 'long';
+    const weightPercent = (Math.abs(target.targetWeight) * 100).toFixed(1);
+    const stepPercent = (fraction * 100).toFixed(0);
+
     if (diff > 0) {
       orders.push({
         symbol: target.symbol,
         side: "buy",
         notional: diff,
-        reason: `Increase position toward ${(target.targetWeight * 100).toFixed(1)}% target (${(fraction * 100).toFixed(0)}% step)`,
+        reason: `Increase ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
       });
     } else if (diff < 0) {
       orders.push({
         symbol: target.symbol,
         side: "sell",
         notional: Math.abs(diff),
-        reason: `Reduce position toward ${(target.targetWeight * 100).toFixed(1)}% target (${(fraction * 100).toFixed(0)}% step)`,
+        reason: `Reduce ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
       });
     }
   }
