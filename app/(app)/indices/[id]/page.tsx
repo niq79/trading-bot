@@ -12,11 +12,14 @@ interface SyntheticIndex {
   created_at: string;
 }
 
+interface EditIndexPageProps {
+  params: Promise<{ id: string }>;
+}
+
 export default async function EditIndexPage({
   params,
-}: {
-  params: { id: string };
-}) {
+}: EditIndexPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   const {
@@ -30,7 +33,7 @@ export default async function EditIndexPage({
   const { data: index } = (await supabase
     .from("synthetic_indices")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", user.id)
     .single()) as { data: SyntheticIndex | null };
 
