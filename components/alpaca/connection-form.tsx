@@ -47,6 +47,9 @@ export function ConnectionForm({ onConnect }: ConnectionFormProps) {
       const response = await fetch("/api/alpaca/validate");
       const data = await response.json();
       setIsConnected(data.connected);
+      if (data.account) {
+        setAccount(data.account);
+      }
     } catch (error) {
       console.error("Error checking connection:", error);
     } finally {

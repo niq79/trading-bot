@@ -4,15 +4,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, Trash2 } from "lucide-react";
+import { Plus, TrendingUp } from "lucide-react";
+import { IndexList } from "@/components/indices/index-list";
 
 interface SyntheticIndex {
   id: string;
@@ -70,71 +63,7 @@ export default async function IndicesPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {indices.map((index) => {
-            const hasWeights = index.weights && index.weights.length > 0;
-            const isEqualWeight = !hasWeights;
-
-            return (
-              <Card key={index.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
-                      <CardTitle className="text-lg">{index.name}</CardTitle>
-                      <CardDescription>
-                        {index.components.length} components
-                      </CardDescription>
-                    </div>
-                    <Badge variant={isEqualWeight ? "secondary" : "default"}>
-                      {isEqualWeight ? "Equal Weight" : "Custom Weights"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm font-medium mb-2">Components:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {index.components.slice(0, 8).map((symbol, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {symbol}
-                            {hasWeights && index.weights[i] && (
-                              <span className="ml-1 text-muted-foreground">
-                                {(index.weights[i] * 100).toFixed(0)}%
-                              </span>
-                            )}
-                          </Badge>
-                        ))}
-                        {index.components.length > 8 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{index.components.length - 8} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button variant="outline" size="sm" asChild className="flex-1">
-                        <Link href={`/indices/${index.id}`}>Edit</Link>
-                      </Button>
-                      <form action={`/api/indices/${index.id}`} method="POST">
-                        <input type="hidden" name="_method" value="DELETE" />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="submit"
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <IndexList indices={indices} />
       )}
     </div>
   );

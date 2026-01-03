@@ -15,7 +15,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, FileText, Check, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SyntheticIndex {
   id: string;
@@ -32,6 +34,7 @@ interface SyntheticIndexFormProps {
 export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [name, setName] = useState(index?.name ?? "");
   const [useCustomWeights, setUseCustomWeights] = useState(
     !!index?.weights && index.weights.length > 0
@@ -44,6 +47,102 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
       weight: index.weights?.[i] ?? 1,
     })) ?? [{ symbol: "", weight: 1 }]
   );
+  const [bulkInput, setBulkInput] = useState("");
+  const [validationStatus, setValidationStatus] = useState<
+    Record<number, 'valid' | 'invalid' | 'validating' | null>
+  >({});
+
+  /**
+   * Parse symbols from text - supports comma, space, newline, and mixed text
+   */
+  const parseSymbols = (text: string): string[] => {
+    // Common English words to exclude (not exhaustive but covers common cases)
+    const excludeWords = new Set([
+      'A', 'AN', 'THE', 'AND', 'OR', 'BUT', 'FOR', 'NOR', 'SO', 'YET',
+      'TO', 'FROM', 'IN', 'ON', 'AT', 'BY', 'WITH', 'ABOUT', 'AS',
+      'IS', 'ARE', 'WAS', 'WERE', 'BE', 'BEEN', 'BEING',
+      'HAVE', 'HAS', 'HAD', 'DO', 'DOES', 'DID',
+      'CAN', 'COULD', 'MAY', 'MIGHT', 'MUST', 'SHALL', 'SHOULD', 'WILL', 'WOULD',
+      'THIS', 'THAT', 'THESE', 'THOSE',
+      'I', 'YOU', 'HE', 'SHE', 'IT', 'WE', 'THEY',
+      'MY', 'YOUR', 'HIS', 'HER', 'ITS', 'OUR', 'THEIR',
+      'BUY', 'SELL', 'ALSO', 'ADD', 'GET', 'PUT', 'CALL'
+    ]);
+    
+    // Extract potential ticker symbols using regex
+    // Matches 1-5 uppercase letters (standard ticker format)
+    const tickerRegex = /\b[A-Z]{1,5}\b/g;
+    const matches = text.toUpperCase().match(tickerRegex) || [];
+    
+    // Filter out common words and remove duplicates while preserving order
+    const filtered = matches.filter(word => !excludeWords.has(word));
+    return Array.from(new Set(filtered));
+  };
+
+  /**
+   * Validate symbols using Alpaca API
+   */
+  const validateAndAddSymbols = async () => {
+    if (!bulkInput.trim()) {
+      toast.error("Please enter some symbols");
+      return;
+    }
+
+    setIsValidating(true);
+    try {
+      const parsed = parseSymbols(bulkInput);
+      
+      if (parsed.length === 0) {
+        toast.error("No valid ticker symbols found in the input");
+        setIsValidating(false);
+        return;
+      }
+
+      // Validate symbols with Alpaca
+      const response = await fetch("/api/alpaca/validate-symbols", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols: parsed }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to validate symbols");
+      }
+
+      const { validSymbols, invalidSymbols } = await response.json();
+
+      // Add valid symbols to components
+      const newSymbols = validSymbols.filter(
+        (symbol: string) => !components.some((c) => c.symbol === symbol)
+      );
+
+      if (newSymbols.length > 0) {
+        setComponents([
+          ...components.filter((c) => c.symbol.trim() !== ""),
+          ...newSymbols.map((symbol: string) => ({ symbol, weight: 1 })),
+        ]);
+        
+        const message = `Added ${newSymbols.length} symbol${newSymbols.length > 1 ? 's' : ''}`;
+        const invalidMsg = invalidSymbols.length > 0 
+          ? ` (${invalidSymbols.length} invalid: ${invalidSymbols.join(", ")})` 
+          : "";
+        toast.success(message + invalidMsg);
+      } else {
+        toast.info("All symbols already added or invalid");
+      }
+
+      if (invalidSymbols.length > 0) {
+        console.log("Invalid symbols:", invalidSymbols);
+      }
+
+      setBulkInput("");
+    } catch (error) {
+      console.error("Error validating symbols:", error);
+      toast.error("Failed to validate symbols");
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   const addComponent = () => {
     setComponents([...components, { symbol: "", weight: 1 }]);
@@ -61,10 +160,41 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
     const updated = [...components];
     if (field === "symbol") {
       updated[index].symbol = (value as string).toUpperCase();
+      // Clear validation status when user types
+      setValidationStatus(prev => ({ ...prev, [index]: null }));
     } else {
       updated[index].weight = value as number;
     }
     setComponents(updated);
+  };
+
+  const validateSymbol = async (index: number, symbol: string) => {
+    if (!symbol.trim()) {
+      setValidationStatus(prev => ({ ...prev, [index]: null }));
+      return;
+    }
+
+    setValidationStatus(prev => ({ ...prev, [index]: 'validating' }));
+
+    try {
+      const response = await fetch("/api/alpaca/validate-symbols", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols: [symbol] }),
+      });
+
+      if (!response.ok) {
+        setValidationStatus(prev => ({ ...prev, [index]: 'invalid' }));
+        return;
+      }
+
+      const { validSymbols } = await response.json();
+      const isValid = validSymbols.includes(symbol);
+      setValidationStatus(prev => ({ ...prev, [index]: isValid ? 'valid' : 'invalid' }));
+    } catch (error) {
+      console.error('Error validating symbol:', error);
+      setValidationStatus(prev => ({ ...prev, [index]: 'invalid' }));
+    }
   };
 
   const normalizeWeights = () => {
@@ -78,6 +208,16 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for invalid symbols
+    const hasInvalidSymbols = Object.values(validationStatus).some(
+      status => status === 'invalid'
+    );
+    if (hasInvalidSymbols) {
+      toast.error('Please fix invalid symbols before submitting');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -178,52 +318,106 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
               )}
             </div>
 
-            <div className="space-y-2">
-              {components.map((component, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    value={component.symbol}
-                    onChange={(e) =>
-                      updateComponent(index, "symbol", e.target.value)
-                    }
-                    placeholder="AAPL"
-                    className="flex-1"
+            <Tabs defaultValue="manual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual">Add Manually</TabsTrigger>
+                <TabsTrigger value="bulk">Bulk Add</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="manual" className="space-y-2 mt-4">
+                {components.map((component, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <Input
+                        value={component.symbol}
+                        onChange={(e) =>
+                          updateComponent(index, "symbol", e.target.value)
+                        }
+                        onBlur={(e) => validateSymbol(index, e.target.value)}
+                        placeholder="AAPL"
+                        className={`pr-10 ${
+                          validationStatus[index] === 'invalid'
+                            ? 'border-red-500 focus-visible:ring-red-500'
+                            : validationStatus[index] === 'valid'
+                            ? 'border-green-500 focus-visible:ring-green-500'
+                            : ''
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {validationStatus[index] === 'validating' && (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        {validationStatus[index] === 'valid' && (
+                          <Check className="h-4 w-4 text-green-500" />
+                        )}
+                        {validationStatus[index] === 'invalid' && (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                    {useCustomWeights && (
+                      <Input
+                        type="number"
+                        value={component.weight}
+                        onChange={(e) =>
+                          updateComponent(index, "weight", parseFloat(e.target.value) || 0)
+                        }
+                        placeholder="Weight"
+                        step="0.01"
+                        min="0"
+                        className="w-32"
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeComponent(index)}
+                      disabled={components.length === 1}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addComponent}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Symbol
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="bulk" className="space-y-2 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bulkInput">Paste Symbols</Label>
+                  <Textarea
+                    id="bulkInput"
+                    value={bulkInput}
+                    onChange={(e) => setBulkInput(e.target.value)}
+                    placeholder="Paste symbols here in any format:&#10;AAPL, MSFT, GOOGL&#10;or&#10;Buy AAPL and MSFT for growth"
+                    rows={6}
+                    className="font-mono text-sm"
                   />
-                  {useCustomWeights && (
-                    <Input
-                      type="number"
-                      value={component.weight}
-                      onChange={(e) =>
-                        updateComponent(index, "weight", parseFloat(e.target.value) || 0)
-                      }
-                      placeholder="Weight"
-                      step="0.01"
-                      min="0"
-                      className="w-32"
-                    />
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Supports comma-separated, space-separated, newline-separated, or mixed text.
+                    Symbols will be automatically detected, validated, and deduplicated.
+                  </p>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => removeComponent(index)}
-                    disabled={components.length === 1}
+                    onClick={validateAndAddSymbols}
+                    disabled={isValidating || !bulkInput.trim()}
+                    className="w-full"
                   >
-                    <X className="h-4 w-4" />
+                    {isValidating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isValidating ? "Validating..." : "Validate & Add Symbols"}
                   </Button>
                 </div>
-              ))}
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addComponent}
-              className="w-full"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Symbol
-            </Button>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Preview */}

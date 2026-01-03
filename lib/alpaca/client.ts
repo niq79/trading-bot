@@ -180,6 +180,41 @@ export class AlpacaClient {
       return false;
     }
   }
+
+  /**
+   * Get asset information for a single symbol
+   */
+  async getAsset(symbol: string): Promise<any> {
+    return this.request(`/v2/assets/${symbol}`);
+  }
+
+  /**
+   * Validate multiple symbols at once
+   * Returns array of valid symbols that are tradable
+   */
+  async validateSymbols(symbols: string[]): Promise<string[]> {
+    if (symbols.length === 0) return [];
+    
+    const validSymbols: string[] = [];
+    
+    // Validate each symbol individually to avoid Alpaca returning all assets
+    // when given invalid symbols
+    for (const symbol of symbols) {
+      try {
+        const asset = await this.request<any>(`/v2/assets/${symbol}`);
+        
+        // Only include tradable and active assets
+        if (asset.tradable && asset.status === 'active') {
+          validSymbols.push(asset.symbol);
+        }
+      } catch (error) {
+        // Symbol is invalid or not found, skip it
+        continue;
+      }
+    }
+    
+    return validSymbols;
+  }
 }
 
 export type {

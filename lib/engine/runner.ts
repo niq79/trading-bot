@@ -156,7 +156,7 @@ async function runStrategy(
   supabase: any
 ): Promise<RunResult> {
   const params = strategy.params as any; // TODO: Fix strategy params type
-  const orders: Array<{
+  const orderResults: Array<{
     symbol: string;
     side: string;
     notional: number;

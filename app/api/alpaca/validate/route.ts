@@ -129,19 +129,58 @@ export async function GET() {
 
     const { data: credentials } = (await supabase
       .from("alpaca_credentials")
-      .select("id, is_paper, created_at")
+      .select("*")
       .eq("user_id", user.id)
-      .single()) as { data: { id: string; is_paper: boolean; created_at: string } | null };
+      .single()) as {
+      data: {
+        id: string;
+        is_paper: boolean;
+        created_at: string;
+        api_key_encrypted: string;
+        api_secret_encrypted: string;
+      } | null;
+    };
 
     if (!credentials) {
       return NextResponse.json({ connected: false });
     }
 
-    return NextResponse.json({
-      connected: true,
-      is_paper: credentials.is_paper,
-      created_at: credentials.created_at,
-    });
+    // Fetch current account information from Alpaca
+    try {
+      const { decrypt } = await import("@/lib/utils/crypto");
+      const apiKey = decrypt(credentials.api_key_encrypted);
+      const apiSecret = decrypt(credentials.api_secret_encrypted);
+
+      const client = new AlpacaClient({
+        apiKey,
+        apiSecret,
+        paper: credentials.is_paper,
+      });
+
+      const account = await client.getAccount();
+
+      return NextResponse.json({
+        connected: true,
+        is_paper: credentials.is_paper,
+        created_at: credentials.created_at,
+        account: {
+          id: account.id,
+          account_number: account.account_number,
+          status: account.status,
+          buying_power: account.buying_power,
+          equity: account.equity,
+          cash: account.cash,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching account info:", error);
+      // Still return connected: true even if fetching account fails
+      return NextResponse.json({
+        connected: true,
+        is_paper: credentials.is_paper,
+        created_at: credentials.created_at,
+      });
+    }
   } catch (error) {
     console.error("Error checking Alpaca connection:", error);
     return NextResponse.json(
