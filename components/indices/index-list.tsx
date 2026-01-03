@@ -79,7 +79,7 @@ export function IndexList({ indices }: IndexListProps) {
                     {index.components.slice(0, 8).map((symbol, i) => (
                       <Badge key={i} variant="outline" className="text-xs">
                         {symbol}
-                        {hasWeights && index.weights[i] && (
+                        {hasWeights && index.weights && index.weights[i] && (
                           <span className="ml-1 text-muted-foreground">
                             {(index.weights[i] * 100).toFixed(0)}%
                           </span>
