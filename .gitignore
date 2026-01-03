@@ -41,3 +41,7 @@ supabase/.temp
 # IDE
 .idea
 .vscode
+
+# GitHub Copilot
+*Citations.md
+# Code Citations.md
