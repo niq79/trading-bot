@@ -27,7 +27,7 @@ export async function DELETE() {
     const { data: signalSources } = await serviceClient
       .from("signal_sources")
       .select("id")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id) as { data: { id: string }[] | null };
 
     if (signalSources && signalSources.length > 0) {
       const sourceIds = signalSources.map((s) => s.id);
