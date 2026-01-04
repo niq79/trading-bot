@@ -95,34 +95,35 @@ export async function runStrategiesForUser(
   }
 
   // Run each strategy
-  for (const strategy of strategies) {
-    try {
-      const result = await runStrategy(
-        strategy,
-        alpacaClient,
-        supabase,
-        dryRun
-      );
-      results.push(result);
-      totalOrdersPlaced += result.ordersPlaced;
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      errors.push(`Strategy ${strategy.name}: ${errorMsg}`);
-      results.push({
-        success: false,
-        strategyId: strategy.id,
-        strategyName: strategy.name,
-        ordersPlaced: 0,
-        error: errorMsg,
-        details: {
-          universeSize: 0,
-          rankedSymbols: 0,
-          targetPositions: 0,
-          signalReadings: [],
-          orders: [],
-        },
-      });
-    }
+  console.log(`User ${userId}: Processing ${strategies.length} strategies in parallel...`);
+  const strategyPromises = strategies.map(strategy =>
+    runStrategy(strategy, alpacaClient, supabase, dryRun)
+      .catch(error => {
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
+        errors.push(`Strategy ${strategy.name}: ${errorMsg}`);
+        return {
+          success: false,
+          strategyId: strategy.id,
+          strategyName: strategy.name,
+          ordersPlaced: 0,
+          error: errorMsg,
+          details: {
+            universeSize: 0,
+            rankedSymbols: 0,
+            targetPositions: 0,
+            signalReadings: [],
+            orders: [],
+          },
+        };
+      })
+  );
+
+  const strategyResults = await Promise.all(strategyPromises);
+  
+  // Aggregate results
+  for (const result of strategyResults) {
+    results.push(result);
+    totalOrdersPlaced += result.ordersPlaced;
   }
 
   // Log the run
@@ -484,11 +485,21 @@ export async function runAllUsers(dryRun = false): Promise<{
   const results: EngineRunResult[] = [];
   let totalOrders = 0;
 
-  for (const userId of uniqueUserIds) {
-    const result = await runStrategiesForUser(userId, dryRun);
+  // Process all users in parallel for speed
+  console.log(`Processing ${uniqueUserIds.length} users in parallel...`);
+  const userPromises = uniqueUserIds.map(userId => 
+    runStrategiesForUser(userId, dryRun)
+  );
+  
+  const userResults = await Promise.all(userPromises);
+  
+  // Aggregate results
+  for (const result of userResults) {
     results.push(result);
     totalOrders += result.totalOrdersPlaced;
   }
+  
+  console.log(`Completed: ${uniqueUserIds.length} users, ${totalOrders} total orders`);
 
   return {
     usersProcessed: uniqueUserIds.length,
