@@ -21,7 +21,7 @@ export default function HelpPage() {
           <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
           <TabsTrigger value="strategies">Strategies</TabsTrigger>
           <TabsTrigger value="indices">Indices</TabsTrigger>
-          <TabsTrigger value="signals">Signals</TabsTrigger>
+          <TabsTrigger value="ranking">Ranking & Execution</TabsTrigger>
           <TabsTrigger value="faq">FAQ</TabsTrigger>
         </TabsList>
 
@@ -56,8 +56,8 @@ export default function HelpPage() {
                     <li>Go to the Strategies page</li>
                     <li>Click "New Strategy"</li>
                     <li>Give it a descriptive name (e.g., "Tech Momentum")</li>
-                    <li>Select a signal source (index or external signals)</li>
-                    <li>Configure parameters like position count and rebalance frequency</li>
+                    <li>Select a universe type (predefined list, custom symbols, or synthetic index)</li>
+                    <li>Configure parameters like position count and allocation method</li>
                     <li>Enable the strategy when ready</li>
                   </ol>
                   <p className="text-sm mt-3">
@@ -69,7 +69,7 @@ export default function HelpPage() {
               <AccordionItem value="item-3">
                 <AccordionTrigger>3. Understanding Daily Execution</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
-                  <p>The bot runs automatically every trading day at 9:00 AM EST:</p>
+                  <p>The bot runs automatically every trading day at 3:55 PM ET:</p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li>Fetches latest signal data for your indices/sources</li>
                     <li>Ranks symbols by signal strength</li>
@@ -128,32 +128,30 @@ export default function HelpPage() {
               </AccordionItem>
 
               <AccordionItem value="item-2">
-                <AccordionTrigger>Rebalance Frequency</AccordionTrigger>
+                <AccordionTrigger>Rebalance Fraction</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    <strong>What it is:</strong> How often the bot should adjust your portfolio holdings.
+                    <strong>What it is:</strong> How aggressively the bot adjusts your portfolio toward target positions on each run.
                   </p>
                   <p>
-                    <strong>Options:</strong>
+                    <strong>How it works:</strong> The bot runs daily at 3:55 PM ET. The rebalance fraction determines what percentage of the difference between current and target positions to trade.
                   </p>
-                  <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>Daily:</strong> Portfolio rebalances every trading day (most active)</li>
-                    <li><strong>Weekly:</strong> Rebalances once per week on Mondays</li>
-                    <li><strong>Monthly:</strong> Rebalances on the 1st trading day of each month</li>
-                  </ul>
-                  <div className="bg-muted p-3 rounded mt-3">
-                    <p className="font-semibold mb-2">Considerations:</p>
+                  <div className="bg-muted p-3 rounded mt-2">
+                    <p className="font-semibold mb-2">Examples:</p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li><strong>Daily:</strong> Responds quickly to signal changes but generates more trades</li>
-                      <li><strong>Weekly:</strong> Good middle ground for most strategies</li>
-                      <li><strong>Monthly:</strong> Lower turnover, suitable for longer-term strategies</li>
+                      <li><strong>1.0 (100%):</strong> Immediately move to target positions in one trade</li>
+                      <li><strong>0.25 (25%):</strong> Gradually adjust over 4 days, trading 25% of the difference each day</li>
+                      <li><strong>0.5 (50%):</strong> Reach target in about 2 days, moderate adjustment speed</li>
                     </ul>
                   </div>
+                  <p className="text-sm mt-3">
+                    <strong>Tip:</strong> Lower values (0.1-0.3) reduce trading costs but take longer to reach targets. Higher values (0.5-1.0) respond faster but generate more trades.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-3">
-                <AccordionTrigger>Allocation Method</AccordionTrigger>
+                <AccordionTrigger>Weighting Scheme</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
                     <strong>What it is:</strong> How capital should be divided among your positions.
@@ -163,13 +161,15 @@ export default function HelpPage() {
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li><strong>Equal Weight:</strong> Each position gets the same dollar amount (e.g., $10,000 each)</li>
-                    <li><strong>Signal Weight:</strong> Positions sized proportionally to signal strength (stronger signals = larger positions)</li>
+                    <li><strong>Score Weighted:</strong> Positions sized based on ranking score (higher-ranked = larger positions)</li>
+                    <li><strong>Inverse Volatility:</strong> Less volatile stocks get larger positions (risk-based weighting)</li>
                   </ul>
                   <div className="bg-muted p-3 rounded mt-3">
                     <p className="font-semibold mb-2">Example with 10 positions and $100k capital:</p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                       <li><strong>Equal Weight:</strong> All 10 stocks get $10,000 each</li>
-                      <li><strong>Signal Weight:</strong> Top-ranked stock might get $15,000, lowest-ranked might get $7,000</li>
+                      <li><strong>Score Weighted:</strong> Top-ranked stock might get $15,000, lowest-ranked might get $7,000</li>
+                      <li><strong>Inverse Volatility:</strong> Low-volatility stock might get $12,000, high-volatility might get $8,000</li>
                     </ul>
                   </div>
                   <p className="text-sm mt-3">
@@ -196,32 +196,28 @@ export default function HelpPage() {
                     </ul>
                   </div>
                   <p className="text-sm mt-3">
-                    <strong>Note:</strong> This is only applied when using Signal Weight allocation.
+                    <strong>Note:</strong> This cap is applied to all weighting schemes to prevent over-concentration.
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-5">
-                <AccordionTrigger>Signal Source</AccordionTrigger>
+                <AccordionTrigger>Universe Type</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    <strong>What it is:</strong> Where the bot should get trading signals from.
+                    <strong>What it is:</strong> Which symbols your strategy can trade from.
                   </p>
                   <p>
                     <strong>Options:</strong>
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>Synthetic Index:</strong> Use one of your custom-defined symbol lists</li>
-                    <li><strong>External Signals:</strong> Fetch signals from an external API endpoint</li>
+                    <li><strong>Predefined List:</strong> Choose from built-in lists like Magnificent 7, S&P 500 Top 50, NASDAQ 100, etc.</li>
+                    <li><strong>Custom Symbols:</strong> Enter a comma-separated list of specific symbols to trade</li>
+                    <li><strong>Synthetic Index:</strong> Use one of your custom-defined symbol lists from the Indices page</li>
                   </ul>
                   <p className="mt-3">
-                    For synthetic indices, all symbols get a neutral signal (0) and are ranked alphabetically. This is useful for:
+                    All symbols in the universe are ranked by the selected ranking metric (momentum, volatility, volume, RSI) and the top N are selected for long positions.
                   </p>
-                  <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
-                    <li>Equal-weight portfolios of specific stocks</li>
-                    <li>Testing strategies with a fixed universe</li>
-                    <li>Simple buy-and-hold approaches</li>
-                  </ul>
                 </AccordionContent>
               </AccordionItem>
 
@@ -360,145 +356,120 @@ export default function HelpPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="signals" className="space-y-4">
+        <TabsContent value="ranking" className="space-y-4">
           <Card className="p-6">
-            <h2 className="text-2xl font-bold mb-4">External Signals</h2>
+            <h2 className="text-2xl font-bold mb-4">Ranking & Execution</h2>
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1">
-                <AccordionTrigger>What are External Signals?</AccordionTrigger>
+                <AccordionTrigger>Ranking Metrics</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    External signals are trading recommendations fetched from an API endpoint you provide. Unlike synthetic indices which treat all symbols equally, external signals include:
+                    The bot ranks all symbols in your universe using one of these metrics:
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li><strong>Symbol:</strong> The stock ticker (e.g., "AAPL")</li>
-                    <li><strong>Signal:</strong> A numerical score indicating strength (-100 to +100)</li>
-                    <li><strong>Date:</strong> When the signal was generated</li>
+                    <li><strong>Momentum (5d/10d/20d/60d):</strong> Price performance over the lookback period - higher is better</li>
+                    <li><strong>Volatility:</strong> Price volatility - lower volatility ranks higher for stability-focused strategies</li>
+                    <li><strong>Volume:</strong> Trading volume - higher volume ranks higher for liquidity</li>
+                    <li><strong>RSI (Relative Strength Index):</strong> Technical indicator - values near 30 (oversold) or 70 (overbought)</li>
                   </ul>
                   <p className="mt-3">
-                    The bot will rank symbols by their signal values and use this ranking to determine which positions to hold.
+                    After ranking, the bot selects the top N symbols for long positions and optionally bottom M symbols for short positions.
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-2">
-                <AccordionTrigger>Setting Up a Signal Source</AccordionTrigger>
+                <AccordionTrigger>Lookback Period</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    When creating or editing a strategy with external signals:
+                    <strong>What it is:</strong> How many days of historical data to use for calculating the ranking metric.
                   </p>
-                  <ol className="list-decimal list-inside space-y-2 ml-4">
-                    <li>Select "External Signals" as the signal source type</li>
-                    <li>Enter your API endpoint URL</li>
-                    <li>(Optional) Add any required authentication headers</li>
-                    <li>Click "Fetch Signals" to test the connection</li>
-                  </ol>
-                  <p className="text-sm mt-3">
-                    The bot will fetch fresh signals before each strategy execution.
-                  </p>
+                  <div className="bg-muted p-3 rounded mt-2">
+                    <p className="font-semibold mb-2">Common Settings:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><strong>5-10 days:</strong> Very short-term, captures recent momentum swings</li>
+                      <li><strong>20-30 days:</strong> Standard monthly period, balances responsiveness with stability</li>
+                      <li><strong>60+ days:</strong> Longer-term trends, smoother but slower to react</li>
+                    </ul>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-3">
-                <AccordionTrigger>API Response Format</AccordionTrigger>
+                <AccordionTrigger>Long & Short Positions</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    Your API endpoint must return JSON in this exact format:
+                    <strong>Long Positions:</strong> Number of top-ranked symbols to buy and hold.
                   </p>
-                  <div className="bg-muted p-3 rounded mt-2 font-mono text-sm">
-                    <pre>{`{
-  "signals": [
-    {
-      "symbol": "AAPL",
-      "signal": 85.5,
-      "date": "2026-01-04"
-    },
-    {
-      "symbol": "MSFT",
-      "signal": 72.3,
-      "date": "2026-01-04"
-    }
-  ]
-}`}</pre>
-                  </div>
-                  <p className="mt-3">
-                    <strong>Requirements:</strong>
+                  <p>
+                    <strong>Short Positions:</strong> Number of bottom-ranked symbols to short (bet against). Set to 0 for long-only strategies.
                   </p>
-                  <ul className="list-disc list-inside space-y-1 ml-4">
-                    <li>Top-level "signals" array</li>
-                    <li>Each signal must have symbol, signal, and date fields</li>
-                    <li>Signal values should be numbers (can be negative)</li>
-                    <li>Dates should be in YYYY-MM-DD format</li>
-                  </ul>
+                  <p className="mt-2">
+                    <strong>Important:</strong> Shorting is not available for crypto assets on Alpaca. For crypto strategies, always set short positions to 0.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-4">
-                <AccordionTrigger>How Signals Are Used</AccordionTrigger>
+                <AccordionTrigger>Cash Reserve</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    During strategy execution:
+                    <strong>What it is:</strong> Percentage of your allocated capital to keep as cash instead of investing.
                   </p>
-                  <ol className="list-decimal list-inside space-y-2 ml-4">
-                    <li>Bot fetches the latest signals from your API</li>
-                    <li>Sorts symbols by signal value (highest to lowest)</li>
-                    <li>Selects the top N symbols based on your position count</li>
-                    <li>Calculates target positions using your allocation method</li>
-                    <li>If using Signal Weight, higher signals get larger positions</li>
-                  </ol>
-                  <div className="bg-muted p-3 rounded mt-3">
-                    <p className="font-semibold mb-2">Example with 3 positions:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                      <li>AAPL: signal 85.5 → Rank #1</li>
-                      <li>MSFT: signal 72.3 → Rank #2</li>
-                      <li>GOOGL: signal 68.1 → Rank #3</li>
-                      <li>TSLA: signal 45.2 → Not included (beyond top 3)</li>
+                  <div className="bg-muted p-3 rounded mt-2">
+                    <p className="font-semibold mb-2">Examples:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><strong>0%:</strong> Fully invested - use all allocated capital for positions</li>
+                      <li><strong>10%:</strong> Keep 10% as cash buffer, invest 90%</li>
+                      <li><strong>20%:</strong> More conservative, maintains larger cash cushion</li>
                     </ul>
                   </div>
+                  <p className="text-sm mt-3">
+                    <strong>Use Case:</strong> Useful for volatile strategies or when you want to maintain dry powder for opportunities.
+                  </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-5">
-                <AccordionTrigger>Authentication & Headers</AccordionTrigger>
+                <AccordionTrigger>Signal Conditions (Advanced)</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    If your API requires authentication, you can add custom headers:
+                    Signal conditions allow you to use external data sources like the Fear & Greed Index to modify strategy behavior.
                   </p>
-                  <div className="bg-muted p-3 rounded mt-2">
-                    <p className="font-semibold mb-2">Common Examples:</p>
-                    <ul className="list-disc list-inside space-y-2 ml-2 text-sm">
-                      <li>
-                        <strong>API Key:</strong> Authorization: Bearer your-api-key-here
-                      </li>
-                      <li>
-                        <strong>Custom Header:</strong> X-API-Key: your-key-here
-                      </li>
-                      <li>
-                        <strong>Basic Auth:</strong> Authorization: Basic base64-credentials
-                      </li>
-                    </ul>
-                  </div>
+                  <p className="mt-2">
+                    <strong>Available Source:</strong> Crypto Fear & Greed Index (0-100 scale)
+                  </p>
+                  <p className="mt-2">
+                    <strong>Use Cases:</strong>
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-4">
+                    <li>Skip trading when fear is extreme (&lt; 25)</li>
+                    <li>Scale position sizes based on market sentiment</li>
+                    <li>Only trade when greed is moderate (25-75)</li>
+                  </ul>
                   <p className="text-sm mt-3">
-                    Headers are stored securely and sent with every signal fetch request.
+                    Find this in the Signal Sources page to set up conditions for your strategies.
                   </p>
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="item-6">
-                <AccordionTrigger>Testing Your Signal Source</AccordionTrigger>
+                <AccordionTrigger>Daily Execution Flow</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    Before enabling a strategy with external signals:
+                    Every trading day at 3:55 PM ET, the bot performs these steps:
                   </p>
                   <ol className="list-decimal list-inside space-y-2 ml-4">
-                    <li>Use the "Fetch Signals" button in the strategy form to test connectivity</li>
-                    <li>Verify the returned signals make sense (correct symbols, reasonable values)</li>
-                    <li>Run a Test Run to see which positions would be selected</li>
-                    <li>Check the execution logs to confirm signals are being fetched correctly</li>
+                    <li>Fetch current account balance and positions from Alpaca</li>
+                    <li>Load universe symbols based on your strategy configuration</li>
+                    <li>Fetch price data for all symbols (lookback period)</li>
+                    <li>Calculate ranking metric for each symbol</li>
+                    <li>Sort and select top N symbols (and bottom M if shorting)</li>
+                    <li>Calculate target positions using weighting scheme</li>
+                    <li>Apply rebalance fraction to determine trades</li>
+                    <li>Place market orders to move toward targets</li>
+                    <li>Log all results to History page</li>
                   </ol>
-                  <p className="text-sm mt-3">
-                    <strong>Tip:</strong> Start with a small position count (3-5) when testing a new signal source.
-                  </p>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -525,7 +496,7 @@ export default function HelpPage() {
                 <AccordionTrigger>When does the bot execute trades?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    The bot runs automatically at <strong>9:00 AM EST</strong> every trading day (Monday-Friday, excluding market holidays).
+                    The bot runs automatically at <strong>3:55 PM ET</strong> every trading day (Monday-Friday, excluding market holidays).
                   </p>
                   <p>
                     This timing allows the bot to execute at market open when liquidity is high. You can see the next scheduled run time on each strategy card.
@@ -549,19 +520,19 @@ export default function HelpPage() {
               </AccordionItem>
 
               <AccordionItem value="item-4">
-                <AccordionTrigger>What happens if a signal fails to fetch?</AccordionTrigger>
+                <AccordionTrigger>What happens if price data can't be fetched?</AccordionTrigger>
                 <AccordionContent className="text-muted-foreground space-y-3">
                   <p>
-                    If the bot can't fetch signals from your external API (due to network issues, API downtime, etc.):
+                    If the bot can't fetch price data from Alpaca (due to network issues, API downtime, market closure, etc.):
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li>The strategy execution is skipped for that run</li>
                     <li>An error is logged in the History page</li>
                     <li>Your existing positions remain unchanged</li>
-                    <li>The bot will retry on the next scheduled run</li>
+                    <li>The bot will retry on the next scheduled run (3:55 PM ET next trading day)</li>
                   </ul>
                   <p className="text-sm mt-3">
-                    <strong>Tip:</strong> Monitor the History page regularly to catch any persistent issues.
+                    <strong>Tip:</strong> Monitor the History page regularly to catch any persistent issues with data fetching or execution.
                   </p>
                 </AccordionContent>
               </AccordionItem>
