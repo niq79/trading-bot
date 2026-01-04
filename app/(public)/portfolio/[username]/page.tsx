@@ -27,6 +27,7 @@ interface Strategy {
 
 interface Performance {
   totalEquity: number | null;
+  portfolioValue: number | null;
   dayPL: number | null;
   dayPLPercent: string;
 }
@@ -114,7 +115,15 @@ export default function PublicPortfolioPage() {
               <CardTitle>Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {showDollarAmounts && data.performance.portfolioValue !== null && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Portfolio Value</p>
+                    <p className="text-2xl font-bold">
+                      ${data.performance.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
                 {showDollarAmounts && data.performance.totalEquity !== null && (
                   <div>
                     <p className="text-sm text-muted-foreground">Total Equity</p>

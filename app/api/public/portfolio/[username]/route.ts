@@ -91,7 +91,8 @@ export async function GET(
     // Get active strategies if enabled
     let strategies: any[] = [];
     if (settings.show_strategies) {
-      const { data: strategiesData } = await supabase
+      const serviceSupabase = await createServiceClient();
+      const { data: strategiesData } = await serviceSupabase
         .from("strategies")
         .select("id, name, params")
         .eq("user_id", userId)
@@ -110,11 +111,13 @@ export async function GET(
     let performance = null;
     if (settings.show_performance) {
       const lastEquity = parseFloat(account.last_equity);
+      const portfolioValue = parseFloat(account.portfolio_value);
       const dayPL = totalEquity - lastEquity;
       const dayPLPercent = ((dayPL / lastEquity) * 100).toFixed(2);
 
       performance = {
         totalEquity: showDollarAmounts ? totalEquity : null,
+        portfolioValue: showDollarAmounts ? portfolioValue : null,
         dayPL: showDollarAmounts ? dayPL : null,
         dayPLPercent,
       };
