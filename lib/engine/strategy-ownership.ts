@@ -38,7 +38,7 @@ export async function getStrategyPositions(
   // Track the most recent action for each symbol
   const symbolActions = new Map<string, 'buy' | 'sell'>();
   
-  for (const order of orders) {
+  for (const order of orders as Array<{ symbol: string; side: string; created_at: string }>) {
     if (!symbolActions.has(order.symbol)) {
       symbolActions.set(order.symbol, order.side as 'buy' | 'sell');
     }
@@ -80,7 +80,7 @@ export async function getOtherStrategiesPositions(
   // Track most recent action per symbol per strategy
   const symbolsByStrategy = new Map<string, Map<string, 'buy' | 'sell'>>();
   
-  for (const order of orders) {
+  for (const order of orders as Array<{ symbol: string; side: string; strategy_id: string; created_at: string }>) {
     if (!symbolsByStrategy.has(order.strategy_id)) {
       symbolsByStrategy.set(order.strategy_id, new Map());
     }
@@ -143,7 +143,7 @@ export async function recordExecution(
       estimated_fees: summary.estimatedFees,
       market_status: summary.marketStatus,
       execution_metadata: metadata,
-    })
+    } as any)
     .select()
     .single();
 
@@ -155,7 +155,7 @@ export async function recordExecution(
   // Insert individual orders
   if (orders.length > 0) {
     const orderRecords = orders.map(order => ({
-      execution_id: execution.id,
+      execution_id: (execution as any).id,
       user_id: userId,
       strategy_id: strategyId,
       symbol: order.symbol,
@@ -168,7 +168,7 @@ export async function recordExecution(
 
     const { error: ordersError } = await supabase
       .from('execution_orders')
-      .insert(orderRecords);
+      .insert(orderRecords as any);
 
     if (ordersError) {
       console.error('Failed to record orders:', ordersError);
@@ -176,5 +176,5 @@ export async function recordExecution(
     }
   }
 
-  return execution.id;
+  return (execution as any).id;
 }

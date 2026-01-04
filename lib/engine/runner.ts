@@ -209,7 +209,7 @@ async function runStrategy(
   const buyingPower = parseFloat(account.buying_power);
 
   // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
-  const ownedSymbols = await getStrategyPositions(userId, strategyId);
+  const ownedSymbols = await getStrategyPositions(strategy.user_id, strategy.id);
   
   const currentPositions: CurrentPosition[] = allPositions
     .filter(p => ownedSymbols.has(p.symbol))
@@ -220,7 +220,7 @@ async function runStrategy(
       current_price: parseFloat(p.current_price),
     }));
 
-  console.log(`Strategy ${strategyName}: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
+  console.log(`Strategy ${strategy.name}: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
 
   // 6. Calculate target positions
   const { targets } = calculateTargetPositions(
@@ -299,8 +299,8 @@ async function runStrategy(
 
   try {
     await recordExecution(
-      userId,
-      strategyId,
+      strategy.user_id,
+      strategy.id,
       orderResults.map(o => ({
         symbol: o.symbol,
         side: o.side as 'buy' | 'sell',
@@ -323,7 +323,7 @@ async function runStrategy(
         signalReadings,
       }
     );
-    console.log(`Strategy ${strategyName}: Recorded automated execution`);
+    console.log(`Strategy ${strategy.name}: Recorded automated execution`);
   } catch (recordError) {
     console.error('Failed to record execution ownership:', recordError);
     // Don't fail the whole run if recording fails
