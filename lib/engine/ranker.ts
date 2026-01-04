@@ -116,9 +116,10 @@ async function getIndexSymbols(indexId: string): Promise<string[]> {
     // Note: Alpaca requires BTC/USD format with slash
     // Crypto trades 24/7 but this bot only runs at 3:55 PM ET on weekdays
     // Crypto cannot be shorted on Alpaca
+    // Only includes crypto pairs actually supported by Alpaca (not all cryptos are available)
     crypto_top10: [
-      "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "DOGE/USD",
-      "ADA/USD", "AVAX/USD", "DOT/USD", "MATIC/USD", "LINK/USD",
+      "BTC/USD", "ETH/USD", "LTC/USD", "BCH/USD", "LINK/USD",
+      "AAVE/USD", "UNI/USD", "SUSHI/USD", "BAT/USD", "MKR/USD",
     ],
   };
 

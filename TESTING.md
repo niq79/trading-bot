@@ -65,7 +65,7 @@ All tests must pass with **100% success rate**:
 - ✅ Dow 30 components
 - ✅ S&P 500 Top 10
 - ✅ NASDAQ 100 Top 10
-- ✅ Top 5 Crypto (BTC/USD, ETH/USD, SOL/USD, XRP/USD, DOGE/USD)
+- ✅ Top 10 Crypto (BTC/USD, ETH/USD, LTC/USD, BCH/USD, LINK/USD, AAVE/USD, UNI/USD, SUSHI/USD, BAT/USD, MKR/USD)
 
 ### Strategy Types
 - ✅ Long-only (long_n > 0, short_n = 0)
