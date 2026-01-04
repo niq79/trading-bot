@@ -31,7 +31,7 @@ export interface SignalConditionRule {
 
 export interface UniverseConfig {
   type: "predefined" | "custom" | "synthetic";
-  predefined_list?: "mag7" | "dow30" | "sp500_top10" | "sp500_top50" | "nasdaq100_top10" | "nasdaq100_top50" | "russell2000_top50" | "crypto_top10";
+  predefined_list?: "mag7" | "dow30" | "sp500_top10" | "sp500_top50" | "nasdaq100_top10" | "nasdaq100_top50" | "russell2000_top50" | "crypto_top10" | "crypto_top25";
   custom_symbols?: string[];
   synthetic_index?: string;
 }
@@ -98,6 +98,7 @@ export const PREDEFINED_LISTS = [
   { value: "nasdaq100_top50", label: "NASDAQ 100 Top 50" },
   { value: "russell2000_top50", label: "Russell 2000 Top 50" },
   { value: "crypto_top10", label: "Top 10 Crypto" },
+  { value: "crypto_top25", label: "Top 25 Crypto (Extended)" },
 ] as const;
 
 export const RANKING_METRICS = [

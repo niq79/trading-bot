@@ -286,7 +286,7 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                       ))}
                     </SelectContent>
                   </Select>
-                  {universeConfig.predefined_list === "crypto_top10" && (
+                  {(universeConfig.predefined_list === "crypto_top10" || universeConfig.predefined_list === "crypto_top25") && (
                     <div className="rounded-md bg-yellow-50 p-3 text-sm border border-yellow-200">
                       <p className="font-medium text-yellow-900">⚠️ Crypto Trading Constraints:</p>
                       <ul className="mt-1 text-yellow-800 text-xs space-y-1 ml-4 list-disc">
@@ -294,6 +294,12 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                         <li>Trading fees: 15-25 bps per trade</li>
                         <li>24/7 trading (bot runs weekdays 3:55 PM ET)</li>
                         <li>No margin available</li>
+                        {universeConfig.predefined_list === "crypto_top10" && (
+                          <li className="font-medium">Includes: BTC, ETH, SOL, DOGE, XRP, AVAX, DOT, LINK, UNI, LTC</li>
+                        )}
+                        {universeConfig.predefined_list === "crypto_top25" && (
+                          <li className="font-medium">Includes: All top 10 + BCH, AAVE, CRV, GRT, SUSHI, BAT, YFI, XTZ, SHIB, PEPE, SKY, TRUMP, stablecoins</li>
+                        )}
                       </ul>
                     </div>
                   )}
