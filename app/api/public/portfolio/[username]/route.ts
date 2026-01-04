@@ -70,6 +70,7 @@ export async function GET(
     ]);
 
     const totalEquity = parseFloat(account.equity);
+    const portfolioValue = parseFloat(account.long_market_value || '0');
 
     // Format positions based on privacy level
     const formattedPositions = positions.map((p) => {
@@ -111,7 +112,6 @@ export async function GET(
     let performance = null;
     if (settings.show_performance) {
       const lastEquity = parseFloat(account.last_equity);
-      const portfolioValue = parseFloat(account.portfolio_value);
       const dayPL = totalEquity - lastEquity;
       const dayPLPercent = ((dayPL / lastEquity) * 100).toFixed(2);
 
