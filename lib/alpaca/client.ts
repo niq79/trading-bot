@@ -77,6 +77,13 @@ interface OrderRequest {
 // SAFETY: Prevent live trading - only paper trading allowed
 const FORCE_PAPER_TRADING = true;
 
+/**
+ * Check if symbol is a crypto pair (contains slash)
+ */
+function isCryptoSymbol(symbol: string): boolean {
+  return symbol.includes('/');
+}
+
 export class AlpacaClient {
   private baseUrl: string;
   private headers: HeadersInit;
@@ -200,6 +207,7 @@ export class AlpacaClient {
   /**
    * Validate multiple symbols at once
    * Returns array of valid symbols that are tradable
+   * Handles both stock symbols (AAPL) and crypto pairs (BTC/USD)
    */
   async validateSymbols(symbols: string[]): Promise<string[]> {
     if (symbols.length === 0) return [];
@@ -210,7 +218,12 @@ export class AlpacaClient {
     // when given invalid symbols
     for (const symbol of symbols) {
       try {
-        const asset = await this.request<any>(`/v2/assets/${symbol}`);
+        // Crypto symbols need to be URL-encoded (BTC/USD -> BTC%2FUSD)
+        const encodedSymbol = isCryptoSymbol(symbol) 
+          ? encodeURIComponent(symbol)
+          : symbol;
+          
+        const asset = await this.request<any>(`/v2/assets/${encodedSymbol}`);
         
         // Only include tradable and active assets
         if (asset.tradable && asset.status === 'active') {
@@ -228,6 +241,7 @@ export class AlpacaClient {
   /**
    * Get historical bars (price data) for a symbol
    * Uses the Alpaca Data API (data.alpaca.markets)
+   * Automatically detects crypto vs stock symbols
    */
   async getBars(
     symbol: string,
@@ -258,8 +272,14 @@ export class AlpacaClient {
 
     // Use Alpaca Data API (different base URL)
     const dataUrl = "https://data.alpaca.markets";
+    
+    // Use crypto endpoint for crypto symbols, stocks endpoint for equities
+    const endpoint = isCryptoSymbol(symbol)
+      ? `/v1beta3/crypto/us/bars?symbols=${symbol}&${queryParams}`
+      : `/v2/stocks/${symbol}/bars?${queryParams}`;
+    
     const response = await fetch(
-      `${dataUrl}/v2/stocks/${symbol}/bars?${queryParams}`,
+      `${dataUrl}${endpoint}`,
       {
         headers: this.headers,
       }
@@ -271,11 +291,18 @@ export class AlpacaClient {
     }
 
     const data = await response.json();
+    
+    // Crypto response format is different - it's { bars: { "BTC/USD": [...] } }
+    if (isCryptoSymbol(symbol)) {
+      return data.bars?.[symbol] || [];
+    }
+    
     return data.bars || [];
   }
 
   /**
    * Get bars for multiple symbols at once
+   * Handles mixed crypto and stock symbols automatically
    */
   async getMultiBars(
     symbols: string[],
@@ -296,31 +323,71 @@ export class AlpacaClient {
     startDate.setDate(startDate.getDate() - (limit + 5));
     const start = params.start || startDate.toISOString();
 
-    // Use IEX feed instead of SIP - IEX is free for paper trading accounts
-    const queryParams = new URLSearchParams({
-      symbols: symbols.join(","),
-      timeframe,
-      start,
-      end,
-      limit: limit.toString(),
-      feed: "iex", // Use IEX feed (free) instead of SIP (paid)
-    });
+    // Separate crypto and stock symbols
+    const cryptoSymbols = symbols.filter(isCryptoSymbol);
+    const stockSymbols = symbols.filter(s => !isCryptoSymbol(s));
 
-    const dataUrl = "https://data.alpaca.markets";
-    const response = await fetch(
-      `${dataUrl}/v2/stocks/bars?${queryParams}`,
-      {
-        headers: this.headers,
+    const result: Record<string, Bar[]> = {};
+
+    // Fetch stock data if any
+    if (stockSymbols.length > 0) {
+      const queryParams = new URLSearchParams({
+        symbols: stockSymbols.join(","),
+        timeframe,
+        start,
+        end,
+        limit: limit.toString(),
+        feed: "iex", // Use IEX feed (free) instead of SIP (paid)
+      });
+
+      const dataUrl = "https://data.alpaca.markets";
+      try {
+        const response = await fetch(
+          `${dataUrl}/v2/stocks/bars?${queryParams}`,
+          {
+            headers: this.headers,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          Object.assign(result, data.bars || {});
+        }
+      } catch (error) {
+        console.error('Error fetching stock bars:', error);
       }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Alpaca Data API error: ${response.status} - ${error}`);
     }
 
-    const data = await response.json();
-    return data.bars || {};
+    // Fetch crypto data if any
+    if (cryptoSymbols.length > 0) {
+      const queryParams = new URLSearchParams({
+        symbols: cryptoSymbols.join(","),
+        timeframe,
+        start,
+        end,
+        limit: limit.toString(),
+      });
+
+      const dataUrl = "https://data.alpaca.markets";
+      try {
+        const response = await fetch(
+          `${dataUrl}/v1beta3/crypto/us/bars?${queryParams}`,
+          {
+            headers: this.headers,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          // Crypto returns nested structure: { bars: { "BTC/USD": [...] } }
+          Object.assign(result, data.bars || {});
+        }
+      } catch (error) {
+        console.error('Error fetching crypto bars:', error);
+      }
+    }
+
+    return result;
   }
 }
 

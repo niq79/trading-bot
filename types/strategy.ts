@@ -1,5 +1,4 @@
 export interface StrategyParams {
-  template: "rank_and_rebalance";
   lookback_days: number;
   ranking_metric: "momentum_5d" | "momentum_10d" | "momentum_20d" | "momentum_60d" | "volatility" | "volume" | "rsi";
   long_n: number;
@@ -75,7 +74,6 @@ export interface UpdateStrategyInput extends Partial<CreateStrategyInput> {
 }
 
 export const DEFAULT_STRATEGY_PARAMS: StrategyParams = {
-  template: "rank_and_rebalance",
   lookback_days: 30,
   ranking_metric: "momentum_20d",
   long_n: 10,

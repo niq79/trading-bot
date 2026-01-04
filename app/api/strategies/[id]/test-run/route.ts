@@ -65,8 +65,10 @@ export async function POST(
 
     // Parse strategy config
     const params = strategy.params_json as {
+      lookback_days: number;
       ranking_metric: string;
       long_n: number;
+      short_n: number;
       rebalance_fraction: number;
       max_weight_per_symbol: number;
       weight_scheme: "equal" | "score_weighted" | "inverse_volatility";

@@ -285,6 +285,17 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                       ))}
                     </SelectContent>
                   </Select>
+                  {universeConfig.predefined_list === "crypto_top10" && (
+                    <div className="rounded-md bg-yellow-50 p-3 text-sm border border-yellow-200">
+                      <p className="font-medium text-yellow-900">⚠️ Crypto Trading Constraints:</p>
+                      <ul className="mt-1 text-yellow-800 text-xs space-y-1 ml-4 list-disc">
+                        <li>Shorting disabled (Alpaca limitation)</li>
+                        <li>Trading fees: 15-25 bps per trade</li>
+                        <li>24/7 trading (bot runs weekdays 3:55 PM ET)</li>
+                        <li>No margin available</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -295,10 +306,10 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                     id="symbols"
                     value={customSymbols}
                     onChange={(e) => setCustomSymbols(e.target.value)}
-                    placeholder="AAPL, GOOGL, MSFT, TSLA"
+                    placeholder="AAPL, GOOGL, MSFT, BTC/USD, ETH/USD"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Enter symbols separated by commas
+                    Enter symbols separated by commas. Crypto format: BTC/USD, ETH/USD (with slash)
                   </p>
                 </div>
               )}

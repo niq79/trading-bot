@@ -112,10 +112,13 @@ async function getIndexSymbols(indexId: string): Promise<string[]> {
       "SPWR", "MGY", "MNDY", "WFRD", "PRGS", "NEOG", "ROIC", "VERX", "AUR", "CRGY",
     ],
 
-    // Top 10 Crypto (by market cap)
-    // Note: Crypto trades 24/7 but this bot only runs at 3:55 PM ET on weekdays
+    // Top 10 Crypto (by market cap and liquidity)
+    // Note: Alpaca requires BTC/USD format with slash
+    // Crypto trades 24/7 but this bot only runs at 3:55 PM ET on weekdays
+    // Crypto cannot be shorted on Alpaca
     crypto_top10: [
-      "BTCUSD", "ETHUSD", "XRPUSD", "SOLUSD", "ADAUSD", "DOGEUSD", "AVAXUSD", "DOTUSD", "LINKUSD", "MATICUSD",
+      "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "DOGE/USD",
+      "ADA/USD", "AVAX/USD", "DOT/USD", "MATIC/USD", "LINK/USD",
     ],
   };
 
@@ -199,8 +202,16 @@ export async function rankSymbols(
   const result: RankedSymbol[] = [];
   
   const topN = rankingConfig.top_n ?? 0;
-  const shortN = rankingConfig.short_n ?? 0;
+  let shortN = rankingConfig.short_n ?? 0;
   const totalSymbols = rankedSymbols.length;
+
+  // CRYPTO CONSTRAINT: Crypto cannot be shorted on Alpaca
+  // Check if any symbols are crypto (contain slash)
+  const hasCrypto = rankedSymbols.some(s => s.symbol.includes('/'));
+  if (hasCrypto && shortN > 0) {
+    console.warn('Crypto symbols detected - shorting disabled (Alpaca limitation)');
+    shortN = 0; // Force disable shorts for crypto
+  }
 
   // Ensure no overlap: if top_n + short_n > total, adjust
   const actualTopN = Math.min(topN, totalSymbols);
