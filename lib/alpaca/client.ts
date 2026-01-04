@@ -352,36 +352,30 @@ export class AlpacaClient {
     const result: Record<string, Bar[]> = {};
 
     // Fetch stock data if any
+    // NOTE: Alpaca's batch API is unreliable for large symbol lists (only returns subset)
+    // Fetch each stock symbol individually in parallel for better reliability
     if (stockSymbols.length > 0) {
-      const queryParams = new URLSearchParams({
-        symbols: stockSymbols.join(","),
-        timeframe,
-        start,
-        end,
-        limit: limit.toString(),
-        feed: "iex", // Use IEX feed (free) instead of SIP (paid)
-      });
-
-      const dataUrl = "https://data.alpaca.markets";
-      try {
-        const response = await fetch(
-          `${dataUrl}/v2/stocks/bars?${queryParams}`,
-          {
-            headers: this.headers,
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          Object.assign(result, data.bars || {});
-          console.log(`Stock bars batch fetched: ${Object.keys(data.bars || {}).length}/${stockSymbols.length} symbols`);
-        } else {
-          const errorText = await response.text();
-          console.error(`Stock bars API error: ${response.status} - ${errorText}`);
+      console.log(`Fetching stock data for ${stockSymbols.length} symbols in parallel...`);
+      
+      const stockPromises = stockSymbols.map(async (symbol) => {
+        try {
+          const bars = await this.getBars(symbol, { timeframe, start, end, limit });
+          return { symbol, bars };
+        } catch (error) {
+          console.warn(`Failed to fetch bars for ${symbol}:`, error);
+          return { symbol, bars: [] };
         }
-      } catch (error) {
-        console.error('Error fetching stock bars:', error);
-      }
+      });
+      
+      const stockResults = await Promise.all(stockPromises);
+      
+      stockResults.forEach(({ symbol, bars }) => {
+        if (bars && bars.length > 0) {
+          result[symbol] = bars;
+        }
+      });
+      
+      console.log(`Stock bars fetched: ${Object.keys(result).filter(s => stockSymbols.includes(s)).length}/${stockSymbols.length} symbols`);
     }
 
     // Fetch crypto data if any
