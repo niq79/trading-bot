@@ -13,6 +13,7 @@ A multi-user SaaS trading bot built with Next.js 15, Supabase, and Alpaca API. U
 - 🎯 **Target-based rebalancing** - Gradual position convergence with configurable fraction
 - 📋 **Full audit trail** - Track positions, orders, and execution history
 - 🧪 **Automated testing** - Comprehensive test suite with CI/CD integration
+- 🔍 **Data availability checkers** - Diagnostic tools for crypto and stock data availability
 
 ## Architecture
 
