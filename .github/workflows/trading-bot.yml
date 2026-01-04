@@ -6,6 +6,12 @@ on:
     # This is 5 minutes before market close
     - cron: '55 20 * * 1-5'
   workflow_dispatch: # Allow manual trigger
+    inputs:
+      dry_run:
+        description: 'Dry run mode (test only, no real orders)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   run-trading-bot:
@@ -63,8 +69,15 @@ jobs:
       - name: Trigger trading bot run
         if: steps.market-check.outputs.skip != 'true'
         run: |
+          # Add dry_run parameter if this is a manual dry run
+          dry_run_param=""
+          if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+            dry_run_param="?dry_run=true"
+            echo "Running in DRY RUN mode - no real orders will be placed"
+          fi
+          
           response=$(curl -s -w "\n%{http_code}" \
-            -X POST "${{ secrets.APP_URL }}/api/cron/run-all-users" \
+            -X POST "${{ secrets.APP_URL }}/api/cron/run-all-users${dry_run_param}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
           
@@ -87,6 +100,7 @@ jobs:
           fi
           
           echo "Trading bot run completed successfully!"
+          echo "Mode: $(echo "$body" | jq -r '.mode // "live"')"
           echo "Users processed: $(echo "$body" | jq -r '.usersProcessed')"
           echo "Total orders: $(echo "$body" | jq -r '.totalOrders')"
 

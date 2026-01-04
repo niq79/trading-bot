@@ -42,9 +42,11 @@ export interface EngineRunResult {
 
 /**
  * Run all strategies for a single user
+ * @param dryRun - If true, simulates orders without placing them
  */
 export async function runStrategiesForUser(
-  userId: string
+  userId: string,
+  dryRun = false
 ): Promise<EngineRunResult> {
   const supabase = await createServiceClient();
   const results: RunResult[] = [];
@@ -98,7 +100,8 @@ export async function runStrategiesForUser(
       const result = await runStrategy(
         strategy,
         alpacaClient,
-        supabase
+        supabase,
+        dryRun
       );
       results.push(result);
       totalOrdersPlaced += result.ordersPlaced;
@@ -129,7 +132,7 @@ export async function runStrategiesForUser(
     strategies_run: strategies.length,
     orders_placed: totalOrdersPlaced,
     status: errors.length > 0 ? "partial" : "success",
-    log: JSON.stringify({ results, errors }),
+    log: JSON.stringify({ results, errors, dryRun }),
   } as any);
 
   return {
@@ -143,6 +146,7 @@ export async function runStrategiesForUser(
 
 /**
  * Run a single strategy
+ * @param dryRun - If true, simulates orders without placing them
  */
 async function runStrategy(
   strategy: {
@@ -153,7 +157,8 @@ async function runStrategy(
   },
   alpacaClient: AlpacaClient,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any
+  supabase: any,
+  dryRun = false
 ): Promise<RunResult> {
   const params = strategy.params as any; // TODO: Fix strategy params type
   const orderResults: Array<{
@@ -239,26 +244,37 @@ async function runStrategy(
   // 8. Validate orders against buying power
   const { adjustedOrders } = validateOrders(orders, buyingPower);
 
-  // 9. Execute orders
+  // 9. Execute orders (or simulate in dry run mode)
   for (const order of adjustedOrders) {
     try {
-      // Crypto orders require 'gtc' (good-til-canceled), stocks use 'day'
-      const isCrypto = order.symbol.includes('/');
-      const timeInForce = isCrypto ? 'gtc' : 'day';
-      
-      await alpacaClient.createOrder({
-        symbol: order.symbol,
-        notional: order.notional.toString(),
-        side: order.side,
-        type: "market",
-        time_in_force: timeInForce,
-      });
-      orderResults.push({
-        symbol: order.symbol,
-        side: order.side,
-        notional: order.notional,
-        status: "submitted",
-      });
+      if (dryRun) {
+        // Dry run mode - just record as simulated
+        orderResults.push({
+          symbol: order.symbol,
+          side: order.side,
+          notional: order.notional,
+          status: "simulated",
+        });
+      } else {
+        // Real execution
+        // Crypto orders require 'gtc' (good-til-canceled), stocks use 'day'
+        const isCrypto = order.symbol.includes('/');
+        const timeInForce = isCrypto ? 'gtc' : 'day';
+        
+        await alpacaClient.createOrder({
+          symbol: order.symbol,
+          notional: order.notional.toString(),
+          side: order.side,
+          type: "market",
+          time_in_force: timeInForce,
+        });
+        orderResults.push({
+          symbol: order.symbol,
+          side: order.side,
+          notional: order.notional,
+          status: "submitted",
+        });
+      }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
       orderResults.push({
@@ -282,14 +298,14 @@ async function runStrategy(
   }
 
   const successfulOrders = orderResults.filter((o) =>
-    o.status === "submitted"
+    o.status === "submitted" || o.status === "simulated"
   ).length;
   
   const failedOrders = orderResults.filter((o) => 
     o.status.startsWith("failed")
   ).length;
 
-  // 11. Record execution for strategy ownership tracking
+  // 11. Record execution for strategy ownership tracking (skip in dry run)
   const totalBuyValue = orders
     .filter(o => o.side === "buy")
     .reduce((sum, o) => sum + o.notional, 0);
@@ -297,36 +313,38 @@ async function runStrategy(
     .filter(o => o.side === "sell")
     .reduce((sum, o) => sum + o.notional, 0);
 
-  try {
-    await recordExecution(
-      strategy.user_id,
-      strategy.id,
-      orderResults.map(o => ({
-        symbol: o.symbol,
-        side: o.side as 'buy' | 'sell',
-        notional: o.notional,
-        status: o.status === "submitted" ? "success" : "failed",
-        error: o.status.startsWith("failed") ? o.status : undefined,
-      })),
-      {
-        ordersPlaced: successfulOrders,
-        ordersFailed: failedOrders,
-        totalBuyValue,
-        totalSellValue,
-        estimatedFees: 0, // TODO: calculate fees
-        marketStatus: "automated",
-      },
-      {
-        universeSize: universeSymbols.length,
-        rankedSymbols: rankedSymbols.length,
-        targetPositions: targets.length,
-        signalReadings,
-      }
-    );
-    console.log(`Strategy ${strategy.name}: Recorded automated execution`);
-  } catch (recordError) {
-    console.error('Failed to record execution ownership:', recordError);
-    // Don't fail the whole run if recording fails
+  if (!dryRun) {
+    try {
+      await recordExecution(
+        strategy.user_id,
+        strategy.id,
+        orderResults.map(o => ({
+          symbol: o.symbol,
+          side: o.side as 'buy' | 'sell',
+          notional: o.notional,
+          status: o.status === "submitted" ? "success" : "failed",
+          error: o.status.startsWith("failed") ? o.status : undefined,
+        })),
+        {
+          ordersPlaced: successfulOrders,
+          ordersFailed: failedOrders,
+          totalBuyValue,
+          totalSellValue,
+          estimatedFees: 0, // TODO: calculate fees
+          marketStatus: "automated",
+        },
+        {
+          universeSize: universeSymbols.length,
+          rankedSymbols: rankedSymbols.length,
+          targetPositions: targets.length,
+          signalReadings,
+        }
+      );
+      console.log(`Strategy ${strategy.name}: Recorded automated execution`);
+    } catch (recordError) {
+      console.error('Failed to record execution ownership:', recordError);
+      // Don't fail the whole run if recording fails
+    }
   }
 
   return {
@@ -397,8 +415,9 @@ async function fetchAllSignals(
 
 /**
  * Run strategies for all users (called by cron job)
+ * @param dryRun - If true, simulates orders without placing them
  */
-export async function runAllUsers(): Promise<{
+export async function runAllUsers(dryRun = false): Promise<{
   usersProcessed: number;
   totalOrders: number;
   results: EngineRunResult[];
@@ -426,7 +445,7 @@ export async function runAllUsers(): Promise<{
   let totalOrders = 0;
 
   for (const userId of uniqueUserIds) {
-    const result = await runStrategiesForUser(userId);
+    const result = await runStrategiesForUser(userId, dryRun);
     results.push(result);
     totalOrders += result.totalOrdersPlaced;
   }
