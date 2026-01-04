@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         .from("user_portfolio_settings")
         .select("user_id")
         .eq("public_username", public_username)
-        .single();
+        .single() as { data: { user_id: string } | null };
 
       if (existingUser && existingUser.user_id !== user.id) {
         return NextResponse.json(
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
           show_performance: show_performance ?? true,
           custom_title,
           custom_description,
-        },
+        } as any,
         { onConflict: "user_id" }
       );
 

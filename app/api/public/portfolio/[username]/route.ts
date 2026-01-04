@@ -9,10 +9,10 @@ import { decrypt } from "@/lib/utils/crypto";
  */
 export async function GET(
   request: Request,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   const supabase = await createServiceClient();
-  const { username } = params;
+  const { username } = await params;
 
   try {
     // Get portfolio settings by public username
@@ -20,7 +20,7 @@ export async function GET(
       .from("user_portfolio_settings")
       .select("*")
       .eq("public_username", username)
-      .single();
+      .single() as { data: any; error: any };
 
     if (settingsError || !settings) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function GET(
       .from("alpaca_credentials")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .single() as { data: { api_key_encrypted: string; api_secret_encrypted: string } | null };
 
     if (!credentials) {
       return NextResponse.json(
@@ -89,15 +89,15 @@ export async function GET(
     });
 
     // Get active strategies if enabled
-    let strategies = [];
+    let strategies: any[] = [];
     if (settings.show_strategies) {
       const { data: strategiesData } = await supabase
         .from("strategies")
         .select("id, name, params")
         .eq("user_id", userId)
-        .eq("is_active", true);
+        .eq("is_active", true) as { data: any[] | null };
 
-      strategies = (strategiesData || []).map((s) => ({
+      strategies = (strategiesData || []).map((s: any) => ({
         id: s.id,
         name: s.name,
         universe: s.params?.universe?.type || "unknown",
