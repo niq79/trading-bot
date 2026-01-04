@@ -287,6 +287,11 @@ export class AlpacaClient {
       limit: limit.toString(),
     });
 
+    // For stocks, add feed parameter to use free IEX data instead of paid SIP
+    if (!isCryptoSymbol(symbol)) {
+      queryParams.append('feed', 'iex');
+    }
+
     // Use Alpaca Data API (different base URL)
     const dataUrl = "https://data.alpaca.markets";
     
