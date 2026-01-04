@@ -220,6 +220,7 @@ export async function POST(
       ranking: {
         rankedSymbols: rankedSymbols.map(s => ({
           symbol: s.symbol,
+          side: s.side,
           score: s.score,
           metrics: s.metrics,
         })),
@@ -233,6 +234,7 @@ export async function POST(
       })),
       targetPositions: targets.map(t => ({
         symbol: t.symbol,
+        side: t.side,
         targetValue: t.targetValue,
         targetWeight: t.targetWeight,
         currentValue: t.currentValue,
