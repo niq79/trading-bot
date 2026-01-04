@@ -191,6 +191,7 @@ export async function rankSymbols(
     rankedSymbols.push({
       symbol,
       score: finalScore,
+      side: 'long', // Default side, will be overridden when selecting shorts
       metrics,
     });
   }

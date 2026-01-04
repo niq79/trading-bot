@@ -1,0 +1,2 @@
+cannot read config in /Users/niklasslotte/Documents/VSCode/trading-bot: open supabase/config.toml: no such file or directory
+Have you set up the project with supabase init?

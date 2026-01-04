@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -32,33 +32,33 @@ export interface Database {
           updated_at?: string;
         };
       };
-      user_alpaca_credentials: {
+      alpaca_credentials: {
         Row: {
           id: string;
           user_id: string;
-          encrypted_api_key: string;
-          encrypted_api_secret: string;
+          api_key_encrypted: string;
+          api_secret_encrypted: string;
           is_paper: boolean;
-          validated_at: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          encrypted_api_key: string;
-          encrypted_api_secret: string;
+          api_key_encrypted: string;
+          api_secret_encrypted: string;
           is_paper?: boolean;
-          validated_at?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          encrypted_api_key?: string;
-          encrypted_api_secret?: string;
+          api_key_encrypted?: string;
+          api_secret_encrypted?: string;
           is_paper?: boolean;
-          validated_at?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
       };
       strategies: {
@@ -339,4 +339,4 @@ export interface Database {
       [_ in never]: never;
     };
   };
-}
+};

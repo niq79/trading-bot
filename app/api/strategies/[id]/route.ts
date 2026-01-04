@@ -76,7 +76,7 @@ export async function PATCH(
 
     const { data: strategy, error } = await supabase
       .from("strategies")
-      .update(body as any)
+      .update(body as never) // Type assertion needed for Next.js build
       .eq("id", id)
       .eq("user_id", user.id)
       .select()

@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already has credentials
     const { data: existingCreds } = await supabase
-      .from("alpaca_credentials" as any)
+      .from("alpaca_credentials")
       .select("id")
       .eq("user_id", user.id)
       .single();
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
           api_key_encrypted: encryptedApiKey,
           api_secret_encrypted: encryptedApiSecret,
           is_paper: true,
-        } as any)
+        } as never) // Type assertion needed for Next.js build
         .eq("user_id", user.id);
 
       if (error) {
@@ -94,7 +94,8 @@ export async function POST(request: NextRequest) {
           api_key_encrypted: encryptedApiKey,
           api_secret_encrypted: encryptedApiSecret,
           is_paper: true,
-        } as any);
+        } as never) // Type assertion needed for Next.js build
+;
 
       if (error) {
         console.error("Error inserting credentials:", error);
