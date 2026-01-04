@@ -5,6 +5,7 @@ import { decrypt } from "@/lib/utils/crypto";
 import { getUniverseSymbols, rankSymbols } from "@/lib/engine/ranker";
 import { calculateTargetPositions, CurrentPosition } from "@/lib/engine/target-calculator";
 import { calculateRebalanceOrders, validateOrders } from "@/lib/engine/rebalancer";
+import { getStrategyPositions } from "@/lib/engine/strategy-ownership";
 
 export async function POST(
   request: NextRequest,
@@ -122,7 +123,7 @@ export async function POST(
 
     // 3. Get account info and current positions
     const account = await alpacaClient.getAccount();
-    const positions = await alpacaClient.getPositions();
+    const allPositions = await alpacaClient.getPositions();
     const totalEquity = parseFloat(account.equity);
     const buyingPower = parseFloat(account.buying_power);
     const cash = parseFloat(account.cash);
@@ -131,12 +132,19 @@ export async function POST(
     const allocationPct = strategy.allocation_pct || 100;
     const allocatedEquity = totalEquity * (allocationPct / 100);
 
-    const currentPositions: CurrentPosition[] = positions.map((p) => ({
-      symbol: p.symbol,
-      qty: parseFloat(p.qty),
-      market_value: parseFloat(p.market_value),
-      current_price: parseFloat(p.current_price),
-    }));
+    // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
+    const ownedSymbols = await getStrategyPositions(user.id, id);
+    
+    const currentPositions: CurrentPosition[] = allPositions
+      .filter(p => ownedSymbols.has(p.symbol))
+      .map((p) => ({
+        symbol: p.symbol,
+        qty: parseFloat(p.qty),
+        market_value: parseFloat(p.market_value),
+        current_price: parseFloat(p.current_price),
+      }));
+
+    console.log(`Strategy ${strategy.name} Test Run: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
 
     // 4. Calculate target positions
     const executionConfig = {

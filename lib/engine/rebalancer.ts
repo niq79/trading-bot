@@ -17,7 +17,7 @@ export interface RebalanceResult {
 /**
  * Calculate the orders needed to rebalance from current to target positions
  * @param targets - Target positions to achieve
- * @param currentPositions - Current positions
+ * @param currentPositions - Current positions (filtered to only this strategy's positions)
  * @param rebalanceFraction - Fraction of difference to trade (0.25 = 25%)
  * @param minTradeSize - Minimum trade size in dollars
  */

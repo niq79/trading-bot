@@ -5,6 +5,7 @@ import { decrypt } from "@/lib/utils/crypto";
 import { getUniverseSymbols, rankSymbols } from "@/lib/engine/ranker";
 import { calculateTargetPositions, CurrentPosition } from "@/lib/engine/target-calculator";
 import { calculateRebalanceOrders, validateOrders } from "@/lib/engine/rebalancer";
+import { getStrategyPositions, recordExecution } from "@/lib/engine/strategy-ownership";
 
 interface OrderResult {
   symbol: string;
@@ -167,7 +168,7 @@ export async function POST(
 
     // 3. Get account info and current positions
     const account = await alpacaClient.getAccount();
-    const positions = await alpacaClient.getPositions();
+    const allPositions = await alpacaClient.getPositions();
     const totalEquity = parseFloat(account.equity);
     const buyingPower = parseFloat(account.buying_power);
 
@@ -175,12 +176,19 @@ export async function POST(
     const allocationPct = strategy.allocation_pct || 100;
     const allocatedEquity = totalEquity * (allocationPct / 100);
 
-    const currentPositions: CurrentPosition[] = positions.map((p) => ({
-      symbol: p.symbol,
-      qty: parseFloat(p.qty),
-      market_value: parseFloat(p.market_value),
-      current_price: parseFloat(p.current_price),
-    }));
+    // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
+    const ownedSymbols = await getStrategyPositions(user.id, id);
+    
+    const currentPositions: CurrentPosition[] = allPositions
+      .filter(p => ownedSymbols.has(p.symbol))
+      .map((p) => ({
+        symbol: p.symbol,
+        qty: parseFloat(p.qty),
+        market_value: parseFloat(p.market_value),
+        current_price: parseFloat(p.current_price),
+      }));
+
+    console.log(`Strategy ${strategy.name}: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
 
     // 4. Calculate target positions
     const executionConfig = {
@@ -287,7 +295,7 @@ export async function POST(
 
     await supabase.from("strategy_runs").insert(runRecord as never); // Type assertion for Supabase
 
-    // 10. Return results
+    // 10. Record execution ownership for strategy isolation
     const totalBuyValue = adjustedOrders
       .filter(o => o.side === "buy")
       .reduce((sum, o) => sum + o.notional, 0);
@@ -295,6 +303,32 @@ export async function POST(
       .filter(o => o.side === "sell")
       .reduce((sum, o) => sum + o.notional, 0);
 
+    try {
+      await recordExecution(
+        user.id,
+        id,
+        orderResults,
+        {
+          ordersPlaced: successCount,
+          ordersFailed: failedCount,
+          totalBuyValue,
+          totalSellValue,
+          estimatedFees: totalFees,
+          marketStatus: isMarketOpen ? "open" : "closed",
+        },
+        {
+          rankedSymbols: rankedSymbols.length,
+          targetPositions: targets.length,
+          validationMessage,
+        }
+      );
+      console.log(`Strategy ${strategy.name}: Recorded execution with ${orderResults.length} orders`);
+    } catch (recordError) {
+      console.error('Failed to record execution ownership:', recordError);
+      // Don't fail the whole execution if recording fails
+    }
+
+    // 11. Return results
     return NextResponse.json({
       success: true,
       ordersPlaced: successCount,

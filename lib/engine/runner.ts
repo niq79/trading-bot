@@ -10,6 +10,7 @@ import { calculateRebalanceOrders, validateOrders } from "./rebalancer";
 import { fetchSignal } from "@/lib/signals/fetcher";
 import { SignalReading, SignalSource } from "@/types/signal";
 import { StrategyParams } from "@/types/strategy";
+import { getStrategyPositions, recordExecution } from "./strategy-ownership";
 
 export interface RunResult {
   success: boolean;
@@ -203,16 +204,23 @@ async function runStrategy(
 
   // 5. Get account info and current positions
   const account = await alpacaClient.getAccount();
-  const positions = await alpacaClient.getPositions();
+  const allPositions = await alpacaClient.getPositions();
   const totalEquity = parseFloat(account.equity);
   const buyingPower = parseFloat(account.buying_power);
 
-  const currentPositions: CurrentPosition[] = positions.map((p) => ({
-    symbol: p.symbol,
-    qty: parseFloat(p.qty),
-    market_value: parseFloat(p.market_value),
-    current_price: parseFloat(p.current_price),
-  }));
+  // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
+  const ownedSymbols = await getStrategyPositions(userId, strategyId);
+  
+  const currentPositions: CurrentPosition[] = allPositions
+    .filter(p => ownedSymbols.has(p.symbol))
+    .map((p) => ({
+      symbol: p.symbol,
+      qty: parseFloat(p.qty),
+      market_value: parseFloat(p.market_value),
+      current_price: parseFloat(p.current_price),
+    }));
+
+  console.log(`Strategy ${strategyName}: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
 
   // 6. Calculate target positions
   const { targets } = calculateTargetPositions(
@@ -276,6 +284,50 @@ async function runStrategy(
   const successfulOrders = orderResults.filter((o) =>
     o.status === "submitted"
   ).length;
+  
+  const failedOrders = orderResults.filter((o) => 
+    o.status.startsWith("failed")
+  ).length;
+
+  // 11. Record execution for strategy ownership tracking
+  const totalBuyValue = orders
+    .filter(o => o.side === "buy")
+    .reduce((sum, o) => sum + o.notional, 0);
+  const totalSellValue = orders
+    .filter(o => o.side === "sell")
+    .reduce((sum, o) => sum + o.notional, 0);
+
+  try {
+    await recordExecution(
+      userId,
+      strategyId,
+      orderResults.map(o => ({
+        symbol: o.symbol,
+        side: o.side as 'buy' | 'sell',
+        notional: o.notional,
+        status: o.status === "submitted" ? "success" : "failed",
+        error: o.status.startsWith("failed") ? o.status : undefined,
+      })),
+      {
+        ordersPlaced: successfulOrders,
+        ordersFailed: failedOrders,
+        totalBuyValue,
+        totalSellValue,
+        estimatedFees: 0, // TODO: calculate fees
+        marketStatus: "automated",
+      },
+      {
+        universeSize: universeSymbols.length,
+        rankedSymbols: rankedSymbols.length,
+        targetPositions: targets.length,
+        signalReadings,
+      }
+    );
+    console.log(`Strategy ${strategyName}: Recorded automated execution`);
+  } catch (recordError) {
+    console.error('Failed to record execution ownership:', recordError);
+    // Don't fail the whole run if recording fails
+  }
 
   return {
     success: true,
