@@ -164,8 +164,10 @@ export async function rankSymbols(
   let allBars: Record<string, Bar[]> = {};
   try {
     allBars = await alpacaClient.getMultiBars(symbols, { limit: lookbackDays });
-  } catch {
+    console.log(`Fetched bars for ${Object.keys(allBars).length}/${symbols.length} symbols`);
+  } catch (error) {
     // Fall back to empty bars - will result in no ranking for these symbols
+    console.error('Error fetching bars:', error);
   }
 
   for (const symbol of symbols) {
@@ -173,6 +175,7 @@ export async function rankSymbols(
     
     // Skip symbols with insufficient data (need at least 5 days for basic metrics)
     if (bars.length < 5) {
+      console.log(`Skipping ${symbol}: only ${bars.length} days of data (need 5+)`);
       continue;
     }
 

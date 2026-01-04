@@ -376,32 +376,23 @@ export class AlpacaClient {
     }
 
     // Fetch crypto data if any
+    // NOTE: Alpaca's crypto API may not reliably support multiple symbols in one request
+    // Fall back to fetching each crypto symbol individually
     if (cryptoSymbols.length > 0) {
-      const queryParams = new URLSearchParams({
-        symbols: cryptoSymbols.join(","),
-        timeframe,
-        start,
-        end,
-        limit: limit.toString(),
-      });
-
-      const dataUrl = "https://data.alpaca.markets";
-      try {
-        const response = await fetch(
-          `${dataUrl}/v1beta3/crypto/us/bars?${queryParams}`,
-          {
-            headers: this.headers,
+      console.log(`Fetching crypto data for ${cryptoSymbols.length} symbols individually...`);
+      
+      for (const symbol of cryptoSymbols) {
+        try {
+          const bars = await this.getBars(symbol, { timeframe, start, end, limit });
+          if (bars && bars.length > 0) {
+            result[symbol] = bars;
           }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          // Crypto returns nested structure: { bars: { "BTC/USD": [...] } }
-          Object.assign(result, data.bars || {});
+        } catch (error) {
+          console.warn(`Failed to fetch bars for ${symbol}:`, error);
         }
-      } catch (error) {
-        console.error('Error fetching crypto bars:', error);
       }
+      
+      console.log(`Crypto bars fetched: ${Object.keys(result).filter(s => cryptoSymbols.includes(s)).length}/${cryptoSymbols.length} symbols`);
     }
 
     return result;
