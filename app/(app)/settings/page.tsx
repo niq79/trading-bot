@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Calendar, Shield } from "lucide-react";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
+import { PortfolioSharingSettings } from "@/components/settings/portfolio-sharing-settings";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -33,6 +34,9 @@ export default async function SettingsPage() {
         title="Settings"
         description="Manage your account settings"
       />
+
+      {/* Portfolio Sharing Settings */}
+      <PortfolioSharingSettings />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Account Info */}
