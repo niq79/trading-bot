@@ -93,11 +93,18 @@ export async function GET(
     let strategies: any[] = [];
     if (settings.show_strategies) {
       const serviceSupabase = await createServiceClient();
-      const { data: strategiesData } = await serviceSupabase
+      const { data: strategiesData, error: strategiesError } = await serviceSupabase
         .from("strategies")
         .select("id, name, params")
         .eq("user_id", userId)
-        .eq("is_active", true) as { data: any[] | null };
+        .eq("is_active", true) as { data: any[] | null; error: any };
+
+      console.log('Strategies query result:', {
+        userId,
+        count: strategiesData?.length || 0,
+        error: strategiesError,
+        showStrategies: settings.show_strategies
+      });
 
       strategies = (strategiesData || []).map((s: any) => ({
         id: s.id,
