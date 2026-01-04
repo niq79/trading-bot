@@ -26,4 +26,12 @@ jobs:
       run: npm test
     
     - name: Build application
+      env:
+        # Dummy env vars for build - not used in actual deployment
+        NEXT_PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bW15IiwiIn0.dummy
+        SUPABASE_SERVICE_ROLE_KEY: dummy
+        ENCRYPTION_KEY: dummyencryptionkey1234567890abcdef
+        CRON_SECRET: dummycronsecrethash
+        NEXT_PUBLIC_APP_URL: http://localhost:3000
       run: npm run build
