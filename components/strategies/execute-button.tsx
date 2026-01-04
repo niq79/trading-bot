@@ -325,17 +325,50 @@ export function ExecuteButton({ strategyId, strategyName, isEnabled }: ExecuteBu
 
           {executionResult && executionResult.success && (
             <div className="space-y-4">
-              {/* Market Status */}
-              <div className="flex items-center gap-2">
-                <Badge variant={executionResult.marketStatus === "open" ? "default" : "secondary"}>
-                  Market {executionResult.marketStatus === "open" ? "Open" : "Closed"}
-                </Badge>
-                {executionResult.marketStatus === "closed" && (
-                  <p className="text-sm text-muted-foreground">
-                    Orders will be queued and executed when market opens
-                  </p>
-                )}
-              </div>
+              {/* Market Status - Only show for stock orders, not crypto */}
+              {(() => {
+                const hasCrypto = executionResult.orderResults?.some(o => o.symbol.includes('/'));
+                const hasStocks = executionResult.orderResults?.some(o => !o.symbol.includes('/'));
+                
+                return (
+                  <div className="flex items-center gap-2">
+                    {hasCrypto && !hasStocks && (
+                      <>
+                        <Badge variant="default">Crypto Trading (24/7)</Badge>
+                        <p className="text-sm text-muted-foreground">
+                          Crypto orders execute immediately
+                        </p>
+                      </>
+                    )}
+                    {hasStocks && !hasCrypto && (
+                      <>
+                        <Badge variant={executionResult.marketStatus === "open" ? "default" : "secondary"}>
+                          Market {executionResult.marketStatus === "open" ? "Open" : "Closed"}
+                        </Badge>
+                        {executionResult.marketStatus === "closed" && (
+                          <p className="text-sm text-muted-foreground">
+                            Orders will be queued and executed when market opens
+                          </p>
+                        )}
+                      </>
+                    )}
+                    {hasCrypto && hasStocks && (
+                      <>
+                        <Badge variant={executionResult.marketStatus === "open" ? "default" : "secondary"}>
+                          Stock Market {executionResult.marketStatus === "open" ? "Open" : "Closed"}
+                        </Badge>
+                        <Badge variant="default">Crypto 24/7</Badge>
+                        {executionResult.marketStatus === "closed" && (
+                          <p className="text-sm text-muted-foreground">
+                            Stock orders queued, crypto orders execute immediately
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+              
 
               {/* Summary */}
               <Card>

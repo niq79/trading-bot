@@ -377,20 +377,27 @@ export class AlpacaClient {
 
     // Fetch crypto data if any
     // NOTE: Alpaca's crypto API may not reliably support multiple symbols in one request
-    // Fall back to fetching each crypto symbol individually
+    // Fetch each crypto symbol individually in parallel for better performance
     if (cryptoSymbols.length > 0) {
-      console.log(`Fetching crypto data for ${cryptoSymbols.length} symbols individually...`);
+      console.log(`Fetching crypto data for ${cryptoSymbols.length} symbols in parallel...`);
       
-      for (const symbol of cryptoSymbols) {
+      const cryptoPromises = cryptoSymbols.map(async (symbol) => {
         try {
           const bars = await this.getBars(symbol, { timeframe, start, end, limit });
-          if (bars && bars.length > 0) {
-            result[symbol] = bars;
-          }
+          return { symbol, bars };
         } catch (error) {
           console.warn(`Failed to fetch bars for ${symbol}:`, error);
+          return { symbol, bars: [] };
         }
-      }
+      });
+      
+      const cryptoResults = await Promise.all(cryptoPromises);
+      
+      cryptoResults.forEach(({ symbol, bars }) => {
+        if (bars && bars.length > 0) {
+          result[symbol] = bars;
+        }
+      });
       
       console.log(`Crypto bars fetched: ${Object.keys(result).filter(s => cryptoSymbols.includes(s)).length}/${cryptoSymbols.length} symbols`);
     }
