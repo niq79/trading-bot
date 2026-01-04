@@ -374,6 +374,10 @@ export class AlpacaClient {
         if (response.ok) {
           const data = await response.json();
           Object.assign(result, data.bars || {});
+          console.log(`Stock bars batch fetched: ${Object.keys(data.bars || {}).length}/${stockSymbols.length} symbols`);
+        } else {
+          const errorText = await response.text();
+          console.error(`Stock bars API error: ${response.status} - ${errorText}`);
         }
       } catch (error) {
         console.error('Error fetching stock bars:', error);
