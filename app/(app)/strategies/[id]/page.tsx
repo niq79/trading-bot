@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { StrategyForm } from "@/components/strategies/strategy-form";
 import { TestRunButton } from "@/components/strategies/test-run-button";
+import { ExecuteButton } from "@/components/strategies/execute-button";
 import { Strategy } from "@/types/strategy";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -46,6 +47,7 @@ export default async function StrategyDetailPage({
         <TabsList>
           <TabsTrigger value="config">Configuration</TabsTrigger>
           <TabsTrigger value="test">Test Run</TabsTrigger>
+          <TabsTrigger value="execute">Execute</TabsTrigger>
         </TabsList>
         
         <TabsContent value="config" className="mt-6">
@@ -54,6 +56,14 @@ export default async function StrategyDetailPage({
         
         <TabsContent value="test" className="mt-6">
           <TestRunButton strategyId={strategy.id} strategyName={strategy.name} />
+        </TabsContent>
+        
+        <TabsContent value="execute" className="mt-6">
+          <ExecuteButton 
+            strategyId={strategy.id} 
+            strategyName={strategy.name}
+            isEnabled={strategy.is_enabled}
+          />
         </TabsContent>
       </Tabs>
     </div>

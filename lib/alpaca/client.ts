@@ -188,6 +188,23 @@ export class AlpacaClient {
     });
   }
 
+  async placeOrder(order: OrderRequest): Promise<AlpacaOrder> {
+    // Validate required fields
+    if (!order.symbol || !order.side || !order.type || !order.time_in_force) {
+      throw new Error("Missing required order fields");
+    }
+
+    // Must have either qty or notional
+    if (!order.qty && !order.notional) {
+      throw new Error("Must specify either qty or notional");
+    }
+
+    return this.request<AlpacaOrder>("/v2/orders", {
+      method: "POST",
+      body: JSON.stringify(order),
+    });
+  }
+
   async validateConnection(): Promise<boolean> {
     try {
       const account = await this.getAccount();
