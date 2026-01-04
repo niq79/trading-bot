@@ -242,22 +242,65 @@ export async function POST(
         const isCrypto = order.symbol.includes('/');
         const timeInForce = isCrypto ? 'gtc' : 'day';
         
-        const alpacaOrder = await alpacaClient.placeOrder({
-          symbol: order.symbol,
-          notional: order.notional.toFixed(2),
-          side: order.side,
-          type: "market",
-          time_in_force: timeInForce,
-        });
+        try {
+          // Try notional order first (supports fractional shares)
+          const alpacaOrder = await alpacaClient.placeOrder({
+            symbol: order.symbol,
+            notional: order.notional.toFixed(2),
+            side: order.side,
+            type: "market",
+            time_in_force: timeInForce,
+          });
 
-        orderResults.push({
-          symbol: order.symbol,
-          side: order.side,
-          notional: order.notional,
-          status: "success",
-          orderId: alpacaOrder.id,
-        });
-        successCount++;
+          orderResults.push({
+            symbol: order.symbol,
+            side: order.side,
+            notional: order.notional,
+            status: "success",
+            orderId: alpacaOrder.id,
+          });
+          successCount++;
+        } catch (notionalError) {
+          // If fractional shares not supported, retry with whole shares
+          const errorMsg = notionalError instanceof Error ? notionalError.message : "";
+          if (errorMsg.includes("not fractionable") || errorMsg.includes("40310000")) {
+            console.log(`${order.symbol} doesn't support fractional shares, retrying with whole shares`);
+            
+            // Get current price and calculate whole shares
+            const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
+            if (bars.length === 0) {
+              throw new Error("Cannot get current price for whole share calculation");
+            }
+            const currentPrice = bars[0].c;
+            const qty = Math.floor(order.notional / currentPrice);
+            
+            if (qty === 0) {
+              throw new Error(`Notional $${order.notional.toFixed(2)} too small for whole shares at $${currentPrice.toFixed(2)}/share`);
+            }
+            
+            // Retry with whole shares
+            const alpacaOrder = await alpacaClient.placeOrder({
+              symbol: order.symbol,
+              qty: qty.toString(),
+              side: order.side,
+              type: "market",
+              time_in_force: timeInForce,
+            });
+            
+            orderResults.push({
+              symbol: order.symbol,
+              side: order.side,
+              notional: qty * currentPrice, // Actual notional with whole shares
+              status: "success",
+              orderId: alpacaOrder.id,
+            });
+            successCount++;
+            console.log(`${order.symbol}: Placed ${qty} whole shares at ~$${currentPrice.toFixed(2)}`);
+          } else {
+            // Different error, re-throw to outer catch
+            throw notionalError;
+          }
+        }
       } catch (error) {
         orderResults.push({
           symbol: order.symbol,
