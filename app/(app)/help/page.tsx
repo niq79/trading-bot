@@ -10,7 +10,7 @@ import {
 
 export default function HelpPage() {
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <PageHeader
         title="Help & Documentation"
         description="Learn how to use the Trading Bot to automate your investment strategy"
