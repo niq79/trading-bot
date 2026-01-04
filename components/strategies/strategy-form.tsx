@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { HelpPopover } from "@/components/shared/help-popover";
 import {
   Strategy,
   CreateStrategyInput,
@@ -405,7 +406,19 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="longN">Long Positions</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="longN">Long Positions</Label>
+                    <HelpPopover title="Position Count">
+                      <p>The number of different stocks to hold simultaneously in your portfolio.</p>
+                      <p className="mt-2">The bot selects the top N symbols from your signal source, ranked by signal strength.</p>
+                      <p className="mt-2 font-medium">Examples:</p>
+                      <ul className="list-disc list-inside space-y-1 mt-1">
+                        <li><strong>5:</strong> More concentrated (20% each)</li>
+                        <li><strong>10:</strong> Balanced diversification (10% each)</li>
+                        <li><strong>20:</strong> Highly diversified (5% each)</li>
+                      </ul>
+                    </HelpPopover>
+                  </div>
                   <Input
                     id="longN"
                     type="number"
@@ -452,9 +465,17 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="rebalanceFraction">
-                  Rebalance Fraction (0.1 - 1.0)
-                </Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="rebalanceFraction">
+                    Rebalance Fraction (0.1 - 1.0)
+                  </Label>
+                  <HelpPopover title="Rebalance Fraction">
+                    <p>How aggressively to adjust your portfolio toward target positions.</p>
+                    <p className="mt-2"><strong>1.0 (100%):</strong> Immediately move to target positions</p>
+                    <p className="mt-1"><strong>0.25 (25%):</strong> Gradually adjust over multiple runs</p>
+                    <p className="mt-2">Lower values reduce trading frequency and costs but take longer to reach targets.</p>
+                  </HelpPopover>
+                </div>
                 <Input
                   id="rebalanceFraction"
                   type="number"

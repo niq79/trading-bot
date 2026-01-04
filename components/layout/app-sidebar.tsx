@@ -18,6 +18,7 @@ import {
   PieChart,
   LogOut,
   TrendingUp,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,6 +62,11 @@ const sidebarNavItems = [
     title: "Run History",
     href: "/history",
     icon: History,
+  },
+  {
+    title: "Help",
+    href: "/help",
+    icon: HelpCircle,
   },
   {
     title: "Settings",

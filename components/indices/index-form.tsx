@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, X, FileText, Check, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { HelpPopover } from "@/components/shared/help-popover";
 
 interface SyntheticIndex {
   id: string;
@@ -277,7 +278,19 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
         <CardContent className="space-y-6">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Index Name</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="name">Index Name</Label>
+              <HelpPopover title="Synthetic Indices">
+                <p>A custom list of stock symbols that your strategies can use as a trading universe.</p>
+                <p className="mt-2">Perfect for:</p>
+                <ul className="list-disc list-inside space-y-1 mt-1">
+                  <li>Sector-specific portfolios (e.g., "Tech Giants")</li>
+                  <li>Thematic baskets (e.g., "EV Companies")</li>
+                  <li>Equal-weight strategies</li>
+                  <li>Testing on a specific set of stocks</li>
+                </ul>
+              </HelpPopover>
+            </div>
             <Input
               id="name"
               value={name}
@@ -317,7 +330,22 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
             <Tabs defaultValue="manual" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="manual">Add Manually</TabsTrigger>
-                <TabsTrigger value="bulk">Bulk Add</TabsTrigger>
+                <TabsTrigger value="bulk">
+                  <span className="flex items-center gap-1">
+                    Bulk Add
+                    <HelpPopover title="Bulk Paste Feature">
+                      <p>Copy a list of symbols from anywhere and paste them here.</p>
+                      <p className="mt-2 font-medium">Supported formats:</p>
+                      <ul className="list-disc list-inside space-y-1 mt-1 text-xs">
+                        <li>Comma-separated: AAPL, MSFT, GOOGL</li>
+                        <li>Space-separated: AAPL MSFT GOOGL</li>
+                        <li>Line-separated (one per line)</li>
+                        <li>Mixed text: "Buy AAPL and MSFT"</li>
+                      </ul>
+                      <p className="mt-2">The bot validates all symbols with Alpaca and only adds valid ones.</p>
+                    </HelpPopover>
+                  </span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual" className="space-y-2 mt-4">
