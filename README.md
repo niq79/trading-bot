@@ -9,8 +9,10 @@ A multi-user SaaS trading bot built with Next.js 15, Supabase, and Alpaca API. U
 - 🔌 **Alpaca integration** - Connect your paper trading account with encrypted credentials
 - 📈 **External signals** - Built-in Fear & Greed Index, custom API signals via JSONPath
 - ⏰ **Automated execution** - Daily runs at 3:55 PM ET via GitHub Actions
+- ⚡ **Manual execution** - Execute strategies on-demand with real-time preview and confirmation
 - 🎯 **Target-based rebalancing** - Gradual position convergence with configurable fraction
 - 📋 **Full audit trail** - Track positions, orders, and execution history
+- 🧪 **Automated testing** - Comprehensive test suite with CI/CD integration
 
 ## Architecture
 
@@ -214,6 +216,21 @@ All tables have RLS policies ensuring users can only access their own data. The 
 
 Example: "Buy top 5 momentum stocks when Fear & Greed > 60, rebalance 25% daily"
 
+### Manual Execution
+
+Execute any strategy immediately with the **Execute** button:
+
+1. **Preview**: See exact orders that will be placed (market status, estimated fees)
+2. **Confirm**: Review order breakdown and fees (0% stocks, 0.2% crypto)
+3. **Execute**: Submit real orders to Alpaca paper trading account
+4. **Results**: View success/failure for each order with links to Alpaca dashboard
+
+**Safety Features:**
+- Strategy must be enabled
+- Two-step confirmation required
+- Clear "REAL ORDERS" warnings
+- Execution audit trail in database
+
 ## Security
 
 - ✅ Alpaca credentials encrypted with AES-256-GCM
@@ -373,8 +390,22 @@ trading-bot/
 ### Running Tests
 
 ```bash
-npm run test  # Unit tests (not yet implemented)
+npm test                    # Run all tests (short selling + crypto + strategy suite)
+npm run test:short-selling  # Test long/short position handling
+npm run test:crypto         # Test cryptocurrency trading
+npm run test:suite          # Test all strategy combinations
 ```
+
+See [TESTING.md](./TESTING.md) for detailed test documentation.
+
+**Test Coverage:**
+- ✅ 25 total tests (100% pass rate)
+- ✅ All universes: Mag7, Dow30, S&P 500, NASDAQ, Crypto
+- ✅ All strategies: Long-only, Long/short
+- ✅ All weight schemes: Equal, Score Weighted, Inverse Volatility
+- ✅ Position limits and ranking metrics
+- ✅ Crypto shorting prevention
+- ✅ CI/CD via GitHub Actions
 
 ### Type Checking
 

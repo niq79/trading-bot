@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "npm run test:short-selling && npm run test:crypto && npm run test:suite",
+    "test:short-selling": "npx tsx test-short-selling.ts",
+    "test:crypto": "npx tsx test-crypto.ts",
+    "test:suite": "npx tsx test-strategy-suite.ts",
     "db:generate": "supabase gen types typescript --local > lib/supabase/database.types.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset"
