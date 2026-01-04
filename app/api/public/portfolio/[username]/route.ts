@@ -70,7 +70,7 @@ export async function GET(
     ]);
 
     const totalEquity = parseFloat(account.equity);
-    const portfolioValue = parseFloat(account.long_market_value || '0');
+    const portfolioValue = parseFloat((account as any).long_market_value || '0');
 
     // Format positions based on privacy level
     const formattedPositions = positions.map((p) => {
