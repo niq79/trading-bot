@@ -65,7 +65,8 @@ All tests must pass with **100% success rate**:
 - ✅ Dow 30 components
 - ✅ S&P 500 Top 10
 - ✅ NASDAQ 100 Top 10
-- ✅ Top 10 Crypto (BTC/USD, ETH/USD, LTC/USD, BCH/USD, LINK/USD, AAVE/USD, UNI/USD, SUSHI/USD, BAT/USD, MKR/USD)
+- ✅ Top 10 Crypto (BTC/USD, ETH/USD, SOL/USD, DOGE/USD, XRP/USD, AVAX/USD, DOT/USD, LINK/USD, UNI/USD, LTC/USD)
+- ✅ Top 25 Crypto (includes all Alpaca-supported USD pairs: BTC, ETH, SOL, DOGE, XRP, AVAX, DOT, LINK, UNI, LTC, BCH, AAVE, CRV, GRT, SUSHI, BAT, YFI, XTZ, SHIB, PEPE, SKY, TRUMP, stablecoins)
 
 ### Strategy Types
 - ✅ Long-only (long_n > 0, short_n = 0)

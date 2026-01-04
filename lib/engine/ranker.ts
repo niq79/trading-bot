@@ -112,14 +112,23 @@ async function getIndexSymbols(indexId: string): Promise<string[]> {
       "SPWR", "MGY", "MNDY", "WFRD", "PRGS", "NEOG", "ROIC", "VERX", "AUR", "CRGY",
     ],
 
-    // Top 10 Crypto (by market cap and liquidity)
+    // Crypto - All Alpaca-supported USD pairs (as of Oct 2025)
     // Note: Alpaca requires BTC/USD format with slash
     // Crypto trades 24/7 but this bot only runs at 3:55 PM ET on weekdays
     // Crypto cannot be shorted on Alpaca
-    // Only includes crypto pairs actually supported by Alpaca (not all cryptos are available)
+    // Source: https://alpaca.markets/support/what-cryptocurrencies-does-alpaca-currently-support
     crypto_top10: [
-      "BTC/USD", "ETH/USD", "LTC/USD", "BCH/USD", "LINK/USD",
-      "AAVE/USD", "UNI/USD", "SUSHI/USD", "BAT/USD", "MKR/USD",
+      "BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "XRP/USD",
+      "AVAX/USD", "DOT/USD", "LINK/USD", "UNI/USD", "LTC/USD",
+    ],
+    
+    // Extended crypto list (top 25 by market cap)
+    crypto_top25: [
+      "BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "XRP/USD",
+      "AVAX/USD", "DOT/USD", "LINK/USD", "UNI/USD", "LTC/USD",
+      "BCH/USD", "AAVE/USD", "CRV/USD", "GRT/USD", "SUSHI/USD",
+      "BAT/USD", "YFI/USD", "XTZ/USD", "SHIB/USD", "PEPE/USD",
+      "SKY/USD", "TRUMP/USD", "USDC/USD", "USDT/USD", "USDG/USD",
     ],
   };
 

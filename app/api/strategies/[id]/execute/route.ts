@@ -230,12 +230,16 @@ export async function POST(
 
     for (const order of adjustedOrders) {
       try {
+        // Crypto orders require 'gtc' (good-til-canceled), stocks use 'day'
+        const isCrypto = order.symbol.includes('/');
+        const timeInForce = isCrypto ? 'gtc' : 'day';
+        
         const alpacaOrder = await alpacaClient.placeOrder({
           symbol: order.symbol,
           notional: order.notional.toFixed(2),
           side: order.side,
           type: "market",
-          time_in_force: "day",
+          time_in_force: timeInForce,
         });
 
         orderResults.push({
