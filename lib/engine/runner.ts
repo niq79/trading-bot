@@ -297,19 +297,18 @@ async function runStrategy(
         });
       } else {
         // Real execution
-        // Crypto orders always use 'gtc' (24/7 trading)
-        // Stock orders: use 'gtc' if market is closed (will execute at next open),
-        // otherwise use 'day' for immediate execution
+        // Use same order placement logic as Execute Now endpoint
+        // Crypto orders require 'gtc' (24/7 trading), stocks use 'day'
         const isCrypto = order.symbol.includes('/');
-        const timeInForce = isCrypto ? 'gtc' : (marketIsOpen ? 'day' : 'gtc');
+        const timeInForce = isCrypto ? 'gtc' : 'day';
         
         console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})`);
         
         try {
           // Try notional order first (supports fractional shares)
-          await alpacaClient.createOrder({
+          const alpacaOrder = await alpacaClient.placeOrder({
             symbol: order.symbol,
-            notional: order.notional.toString(),
+            notional: order.notional.toFixed(2),
             side: order.side,
             type: "market",
             time_in_force: timeInForce,
@@ -320,7 +319,7 @@ async function runStrategy(
             notional: order.notional,
             status: "submitted",
           });
-          console.log(`✓ ${order.symbol} order submitted successfully`);
+          console.log(`✓ ${order.symbol} order submitted successfully (order ID: ${alpacaOrder.id})`);
         } catch (notionalError) {
           // If fractional shares not supported, retry with whole shares
           const errorMsg = notionalError instanceof Error ? notionalError.message : "";
@@ -340,7 +339,7 @@ async function runStrategy(
             }
             
             // Retry with whole shares
-            await alpacaClient.createOrder({
+            const alpacaOrder = await alpacaClient.placeOrder({
               symbol: order.symbol,
               qty: qty.toString(),
               side: order.side,
