@@ -134,18 +134,21 @@ export default function HelpPage() {
                     <strong>What it is:</strong> How aggressively the bot adjusts your portfolio toward target positions on each run.
                   </p>
                   <p>
-                    <strong>How it works:</strong> The bot runs daily at 3:55 PM ET. The rebalance fraction determines what percentage of the difference between current and target positions to trade.
+                    <strong>How it works:</strong> The bot runs daily at 3:55 PM ET. The rebalance fraction determines what percentage of the difference to trade for ALL position changes - including entries, increases, decreases, and exits.
                   </p>
                   <div className="bg-muted p-3 rounded mt-2">
                     <p className="font-semibold mb-2">Examples:</p>
                     <ul className="list-disc list-inside space-y-1 ml-2">
                       <li><strong>1.0 (100%):</strong> Immediately move to target positions in one trade</li>
-                      <li><strong>0.25 (25%):</strong> Gradually adjust over 4 days, trading 25% of the difference each day</li>
-                      <li><strong>0.5 (50%):</strong> Reach target in about 2 days, moderate adjustment speed</li>
+                      <li><strong>0.25 (25%):</strong> Gradually adjust over ~4 runs, trading 25% of the difference each day</li>
+                      <li><strong>0.1 (10%):</strong> Very gradual adjustment over ~10 runs, averaging entry/exit prices</li>
                     </ul>
                   </div>
                   <p className="text-sm mt-3">
-                    <strong>Tip:</strong> Lower values (0.1-0.3) reduce trading costs but take longer to reach targets. Higher values (0.5-1.0) respond faster but generate more trades.
+                    <strong>Important:</strong> This applies to exits too - positions leaving the universe will be sold gradually (e.g., 25% per day with 0.25 fraction), reducing market impact and allowing better average exit prices.
+                  </p>
+                  <p className="text-sm mt-2">
+                    <strong>Tip:</strong> Lower values (0.1-0.3) reduce trading costs and market impact but take longer to fully adjust. Higher values (0.5-1.0) respond faster but generate more trades.
                   </p>
                 </AccordionContent>
               </AccordionItem>

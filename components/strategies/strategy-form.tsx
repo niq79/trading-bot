@@ -476,10 +476,11 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
                     Rebalance Fraction (0.1 - 1.0)
                   </Label>
                   <HelpPopover title="Rebalance Fraction">
-                    <p>How aggressively to adjust your portfolio toward target positions.</p>
-                    <p className="mt-2"><strong>1.0 (100%):</strong> Immediately move to target positions</p>
-                    <p className="mt-1"><strong>0.25 (25%):</strong> Gradually adjust over multiple runs</p>
-                    <p className="mt-2">Lower values reduce trading frequency and costs but take longer to reach targets.</p>
+                    <p>How aggressively to adjust ALL positions - entries, increases, decreases, and exits.</p>
+                    <p className="mt-2"><strong>1.0 (100%):</strong> Immediately reach target positions</p>
+                    <p className="mt-1"><strong>0.25 (25%):</strong> Gradually adjust over ~4 runs</p>
+                    <p className="mt-1"><strong>0.1 (10%):</strong> Very gradual over ~10 runs</p>
+                    <p className="mt-2">Applies to exits too - positions leaving the universe are sold gradually at the same fraction, reducing market impact and averaging exit prices.</p>
                   </HelpPopover>
                 </div>
                 <Input

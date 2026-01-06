@@ -35,15 +35,17 @@ export function calculateRebalanceOrders(
   const fraction = Math.max(0, Math.min(1, rebalanceFraction));
 
   // First, identify positions to close (not in targets)
-  // Note: Positions not in target universe are closed fully regardless of rebalance_fraction
+  // Apply rebalance_fraction to exits as well for consistency
   for (const position of currentPositions) {
     if (!targetSymbols.has(position.symbol) && position.market_value > 0) {
       symbolsToClose.push(position.symbol);
+      const exitAmount = position.market_value * fraction;
+      const stepPercent = (fraction * 100).toFixed(0);
       orders.push({
         symbol: position.symbol,
         side: "sell",
-        notional: position.market_value,
-        reason: "Position not in target universe",
+        notional: exitAmount,
+        reason: `Exit position not in target universe (${stepPercent}% step)`,
       });
     }
   }
