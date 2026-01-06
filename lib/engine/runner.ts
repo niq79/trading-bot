@@ -155,6 +155,7 @@ async function runStrategy(
     name: string;
     params: StrategyParams;
     user_id: string;
+    universe_config_json?: any;
   },
   alpacaClient: AlpacaClient,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,6 +182,9 @@ async function runStrategy(
     rebalance_fraction: rawParams.rebalance_fraction ?? 0.25,
   };
   
+  // Get universe config from strategy (stored at strategy level, not in params)
+  const universeConfig = strategy.universe_config_json || rawParams.universe || {};
+  
   const orderResults: Array<{
     symbol: string;
     side: string;
@@ -197,11 +201,11 @@ async function runStrategy(
 
   // 2. Fetch synthetic index if needed
   let syntheticIndex;
-  if (params.universe?.type === "synthetic" && params.universe?.synthetic_index) {
+  if (universeConfig.type === "synthetic" && universeConfig.synthetic_index) {
     const { data: index } = await supabase
       .from("synthetic_indices")
       .select("*")
-      .eq("id", params.universe.synthetic_index)
+      .eq("id", universeConfig.synthetic_index)
       .eq("user_id", strategy.user_id)
       .single();
     syntheticIndex = index;
@@ -209,7 +213,7 @@ async function runStrategy(
 
   // 3. Get universe symbols
   const universeSymbols = await getUniverseSymbols(
-    params.universe,
+    universeConfig,
     alpacaClient,
     syntheticIndex
   );
