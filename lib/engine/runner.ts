@@ -153,7 +153,8 @@ async function runStrategy(
   strategy: {
     id: string;
     name: string;
-    params: StrategyParams;
+    params?: StrategyParams;
+    params_json?: any; // Database column name
     user_id: string;
     universe_config_json?: any;
   },
@@ -162,7 +163,8 @@ async function runStrategy(
   supabase: any,
   dryRun = false
 ): Promise<RunResult> {
-  const rawParams = strategy.params as any;
+  // Database returns params_json, but some code may use params
+  const rawParams = (strategy.params_json || strategy.params || {}) as any;
   
   // Normalize params to support both flat and nested structures
   // Database stores flat structure, but code expects nested
