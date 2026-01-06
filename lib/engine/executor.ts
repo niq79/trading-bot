@@ -209,6 +209,15 @@ export async function executeStrategy(
       return [symbol];
     };
     
+    // Convert Alpaca symbol to universe format (add slash for crypto)
+    const toUniverseFormat = (symbol: string): string => {
+      if (/^[A-Z]{6,8}$/.test(symbol) && symbol.endsWith('USD')) {
+        const base = symbol.slice(0, -3);
+        return `${base}/USD`;
+      }
+      return symbol;
+    };
+    
     const currentPositions: CurrentPosition[] = allPositions
       .filter(p => {
         // Check both symbol formats (with and without slash for crypto)
@@ -216,7 +225,7 @@ export async function executeStrategy(
         return variants.some(v => ownedSymbols.has(v));
       })
       .map((p) => ({
-        symbol: p.symbol,
+        symbol: toUniverseFormat(p.symbol), // Normalize to universe format
         qty: parseFloat(p.qty),
         market_value: parseFloat(p.market_value),
         current_price: parseFloat(p.current_price),
