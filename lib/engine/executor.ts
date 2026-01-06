@@ -195,8 +195,26 @@ export async function executeStrategy(
     // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
     const ownedSymbols = await getStrategyPositions(strategy.user_id, strategy.id, supabase);
     
+    // Helper to normalize crypto symbols (BTCUSD <-> BTC/USD)
+    const normalizeSymbol = (symbol: string) => {
+      // If crypto without slash (e.g., BTCUSD), try adding slash
+      if (/^[A-Z]{6,8}$/.test(symbol) && symbol.endsWith('USD')) {
+        const base = symbol.slice(0, -3);
+        return [symbol, `${base}/USD`];
+      }
+      // If has slash, also return without slash
+      if (symbol.includes('/')) {
+        return [symbol, symbol.replace('/', '')];
+      }
+      return [symbol];
+    };
+    
     const currentPositions: CurrentPosition[] = allPositions
-      .filter(p => ownedSymbols.has(p.symbol))
+      .filter(p => {
+        // Check both symbol formats (with and without slash for crypto)
+        const variants = normalizeSymbol(p.symbol);
+        return variants.some(v => ownedSymbols.has(v));
+      })
       .map((p) => ({
         symbol: p.symbol,
         qty: parseFloat(p.qty),
