@@ -270,6 +270,16 @@ async function runStrategy(
   // 8. Validate orders against buying power
   const { adjustedOrders } = validateOrders(orders, buyingPower);
 
+  // 8.5. Check market hours for stock orders
+  let marketIsOpen = true;
+  try {
+    const clock = await alpacaClient.getClock();
+    marketIsOpen = clock.is_open;
+    console.log(`Market status: ${marketIsOpen ? 'OPEN' : 'CLOSED'}`);
+  } catch (error) {
+    console.warn('Could not fetch market clock, assuming market is open:', error);
+  }
+
   // 9. Execute orders (or simulate in dry run mode)
   for (const order of adjustedOrders) {
     try {
@@ -283,9 +293,11 @@ async function runStrategy(
         });
       } else {
         // Real execution
-        // Crypto orders require 'gtc' (good-til-canceled), stocks use 'day'
+        // Crypto orders always use 'gtc' (24/7 trading)
+        // Stock orders: use 'gtc' if market is closed (will execute at next open),
+        // otherwise use 'day' for immediate execution
         const isCrypto = order.symbol.includes('/');
-        const timeInForce = isCrypto ? 'gtc' : 'day';
+        const timeInForce = isCrypto ? 'gtc' : (marketIsOpen ? 'day' : 'gtc');
         
         try {
           // Try notional order first (supports fractional shares)
@@ -370,6 +382,8 @@ async function runStrategy(
   const failedOrders = orderResults.filter((o) => 
     o.status.startsWith("failed")
   ).length;
+
+  console.log(`Strategy ${strategy.name}: ${successfulOrders} successful, ${failedOrders} failed out of ${adjustedOrders.length} orders`);
 
   // 11. Record execution for strategy ownership tracking (skip in dry run)
   const totalBuyValue = orders
