@@ -266,9 +266,11 @@ async function runStrategy(
   // Get rebalance_fraction from params (default to 0.25 = 25%)
   const rebalanceFraction = params.rebalance_fraction ?? 0.25;
   const { orders } = calculateRebalanceOrders(targets, currentPositions, rebalanceFraction);
+  console.log(`Strategy ${strategy.name}: Generated ${orders.length} rebalance orders`);
 
   // 8. Validate orders against buying power
   const { adjustedOrders } = validateOrders(orders, buyingPower);
+  console.log(`Strategy ${strategy.name}: ${adjustedOrders.length} orders after validation (buying power: $${buyingPower.toFixed(2)})`);
 
   // 8.5. Check market hours for stock orders
   let marketIsOpen = true;
@@ -281,6 +283,8 @@ async function runStrategy(
   }
 
   // 9. Execute orders (or simulate in dry run mode)
+  console.log(`Strategy ${strategy.name}: Executing ${adjustedOrders.length} orders (dryRun: ${dryRun})`);
+  
   for (const order of adjustedOrders) {
     try {
       if (dryRun) {
@@ -299,6 +303,8 @@ async function runStrategy(
         const isCrypto = order.symbol.includes('/');
         const timeInForce = isCrypto ? 'gtc' : (marketIsOpen ? 'day' : 'gtc');
         
+        console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})`);
+        
         try {
           // Try notional order first (supports fractional shares)
           await alpacaClient.createOrder({
@@ -314,6 +320,7 @@ async function runStrategy(
             notional: order.notional,
             status: "submitted",
           });
+          console.log(`✓ ${order.symbol} order submitted successfully`);
         } catch (notionalError) {
           // If fractional shares not supported, retry with whole shares
           const errorMsg = notionalError instanceof Error ? notionalError.message : "";
@@ -355,6 +362,7 @@ async function runStrategy(
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      console.error(`✗ ${order.symbol} order failed:`, errorMsg);
       orderResults.push({
         symbol: order.symbol,
         side: order.side,
