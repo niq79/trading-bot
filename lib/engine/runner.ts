@@ -82,7 +82,7 @@ export async function runStrategiesForUser(
     .from("strategies")
     .select("*")
     .eq("user_id", userId)
-    .eq("is_active", true)) as { data: Array<{ id: string; name: string; params: any; user_id: string }> | null };
+    .eq("is_enabled", true)) as { data: Array<{ id: string; name: string; params: any; user_id: string }> | null };
 
   if (!strategies || strategies.length === 0) {
     return {
@@ -469,7 +469,7 @@ export async function runAllUsers(dryRun = false): Promise<{
   const { data: users } = await supabase
     .from("strategies")
     .select("user_id")
-    .eq("is_active", true) as { data: { user_id: string }[] | null };
+    .eq("is_enabled", true) as { data: { user_id: string }[] | null };
 
   if (!users || users.length === 0) {
     return {

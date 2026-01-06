@@ -106,32 +106,29 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
-          strategy_id: string;
-          started_at: string;
-          ended_at: string | null;
+          ran_at: string;
+          strategies_run: number;
+          orders_placed: number;
           status: string;
-          signal_values_json: Json | null;
-          log_json: Json | null;
+          log: Json | null;
         };
         Insert: {
           id?: string;
           user_id: string;
-          strategy_id: string;
-          started_at?: string;
-          ended_at?: string | null;
+          ran_at?: string;
+          strategies_run?: number;
+          orders_placed?: number;
           status?: string;
-          signal_values_json?: Json | null;
-          log_json?: Json | null;
+          log?: Json | null;
         };
         Update: {
           id?: string;
           user_id?: string;
-          strategy_id?: string;
-          started_at?: string;
-          ended_at?: string | null;
+          ran_at?: string;
+          strategies_run?: number;
+          orders_placed?: number;
           status?: string;
-          signal_values_json?: Json | null;
-          log_json?: Json | null;
+          log?: Json | null;
         };
       };
       targets: {

@@ -97,7 +97,7 @@ export async function GET(
         .from("strategies")
         .select("id, name, params")
         .eq("user_id", userId)
-        .eq("is_active", true) as { data: any[] | null; error: any };
+        .eq("is_enabled", true) as { data: any[] | null; error: any };
 
       console.log('Strategies query result:', {
         userId,
