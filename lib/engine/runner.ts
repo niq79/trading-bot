@@ -161,7 +161,26 @@ async function runStrategy(
   supabase: any,
   dryRun = false
 ): Promise<RunResult> {
-  const params = strategy.params as any; // TODO: Fix strategy params type
+  const rawParams = strategy.params as any;
+  
+  // Normalize params to support both flat and nested structures
+  // Database stores flat structure, but code expects nested
+  const params = {
+    ranking: rawParams.ranking || {
+      factors: [{ factor: rawParams.ranking_metric || 'momentum_5d', weight: 1 }],
+      lookback_days: rawParams.lookback_days || 10,
+    },
+    execution: rawParams.execution || {
+      top_n: rawParams.long_n || 10,
+      short_n: rawParams.short_n || 0,
+      signal_conditions: rawParams.signal_conditions || [],
+      weight_scheme: rawParams.weight_scheme || 'equal',
+      max_weight_per_symbol: rawParams.max_weight_per_symbol || 0.2,
+      cash_reserve_pct: rawParams.cash_reserve_pct || 0,
+    },
+    rebalance_fraction: rawParams.rebalance_fraction ?? 0.25,
+  };
+  
   const orderResults: Array<{
     symbol: string;
     side: string;
@@ -171,7 +190,7 @@ async function runStrategy(
 
   // 1. Fetch signal readings
   const signalReadings = await fetchAllSignals(
-    params.execution?.signal_conditions?.map((c: any) => c.source_id) || [],
+    params.execution.signal_conditions?.map((c: any) => c.source_id) || [],
     strategy.user_id,
     supabase
   );
