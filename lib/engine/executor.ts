@@ -193,7 +193,7 @@ export async function executeStrategy(
     const allocatedEquity = totalEquity * (allocationPct / 100);
 
     // STRATEGY ISOLATION: Only consider positions owned by THIS strategy
-    const ownedSymbols = await getStrategyPositions(strategy.user_id, strategy.id);
+    const ownedSymbols = await getStrategyPositions(strategy.user_id, strategy.id, supabase);
     
     const currentPositions: CurrentPosition[] = allPositions
       .filter(p => ownedSymbols.has(p.symbol))
@@ -401,7 +401,8 @@ export async function executeStrategy(
             targetPositions: targets.length,
             signalReadings,
             validationMessage,
-          }
+          },
+          supabase
         );
         console.log(`Strategy ${strategy.name}: Recorded ${trigger} execution`);
       } catch (recordError) {

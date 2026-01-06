@@ -3,6 +3,7 @@
  * Helps track which positions belong to which strategy
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 
 export interface PositionOwnership {
@@ -18,12 +19,14 @@ export interface PositionOwnership {
  */
 export async function getStrategyPositions(
   userId: string,
-  strategyId: string
+  strategyId: string,
+  supabase?: any
 ): Promise<Set<string>> {
-  const supabase = await createSupabaseClient();
+  // If no client provided, create one (for backwards compatibility)
+  const client = supabase || await createSupabaseClient();
   
   // Get all successful buy/sell orders for this strategy, ordered by most recent
-  const { data: orders } = await supabase
+  const { data: orders } = await client
     .from('execution_orders')
     .select('symbol, side, created_at')
     .eq('user_id', userId)
@@ -60,12 +63,13 @@ export async function getStrategyPositions(
  */
 export async function getOtherStrategiesPositions(
   userId: string,
-  currentStrategyId: string
+  currentStrategyId: string,
+  supabase?: any
 ): Promise<Set<string>> {
-  const supabase = await createSupabaseClient();
+  const client = supabase || await createSupabaseClient();
   
   // Get all successful orders from OTHER strategies
-  const { data: orders } = await supabase
+  const { data: orders } = await client
     .from('execution_orders')
     .select('symbol, side, strategy_id, created_at')
     .eq('user_id', userId)
@@ -126,12 +130,13 @@ export async function recordExecution(
     estimatedFees: number;
     marketStatus: string;
   },
-  metadata?: any
+  metadata?: any,
+  supabase?: any
 ): Promise<string> {
-  const supabase = await createSupabaseClient();
+  const client = supabase || await createSupabaseClient();
   
   // Insert execution record
-  const { data: execution, error: execError } = await supabase
+  const { data: execution, error: execError } = await client
     .from('executions')
     .insert({
       user_id: userId,
@@ -166,7 +171,7 @@ export async function recordExecution(
       error_message: order.error,
     }));
 
-    const { error: ordersError } = await supabase
+    const { error: ordersError } = await client
       .from('execution_orders')
       .insert(orderRecords as any);
 
