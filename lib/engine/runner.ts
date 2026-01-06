@@ -148,6 +148,9 @@ async function runStrategy(
   // Database returns params_json, but some code may use params
   const rawParams = (strategy.params_json || strategy.params || {}) as any;
   
+  // Check for rebalance_fraction at strategy root level (backwards compat)
+  const rebalanceFractionFromRoot = (strategy as any).rebalance_fraction;
+  
   // Normalize params to match StrategyConfig format
   const strategyConfig: StrategyConfig = {
     id: strategy.id,
@@ -159,7 +162,7 @@ async function runStrategy(
       ranking_metric: rawParams.ranking_metric || 'momentum_5d',
       long_n: rawParams.long_n || 10,
       short_n: rawParams.short_n || 0,
-      rebalance_fraction: rawParams.rebalance_fraction ?? 0.25,
+      rebalance_fraction: rebalanceFractionFromRoot ?? rawParams.rebalance_fraction ?? 0.25,
       max_weight_per_symbol: rawParams.max_weight_per_symbol ?? 0.2,
       weight_scheme: rawParams.weight_scheme || 'equal',
       cash_reserve_pct: rawParams.cash_reserve_pct || 0,

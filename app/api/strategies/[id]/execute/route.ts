@@ -71,12 +71,19 @@ export async function POST(
     const alpacaClient = new AlpacaClient({ apiKey, apiSecret, paper: true });
 
     // Execute strategy using unified executor
+    // Note: rebalance_fraction might be at strategy root level for backwards compat
+    const params = strategy.params_json as StrategyConfig['params_json'];
+    const rebalanceFractionFromRoot = (strategy as unknown as { rebalance_fraction?: number }).rebalance_fraction;
+    
     const strategyConfig: StrategyConfig = {
       id: strategy.id,
       name: strategy.name,
       user_id: user.id,
       allocation_pct: strategy.allocation_pct,
-      params_json: strategy.params_json as StrategyConfig['params_json'],
+      params_json: {
+        ...params,
+        rebalance_fraction: rebalanceFractionFromRoot ?? params.rebalance_fraction,
+      },
       universe_config_json: strategy.universe_config_json as StrategyConfig['universe_config_json'],
     };
 
