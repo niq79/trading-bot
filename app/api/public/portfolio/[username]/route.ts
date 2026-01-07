@@ -95,7 +95,7 @@ export async function GET(
       const serviceSupabase = await createServiceClient();
       const { data: strategiesData, error: strategiesError } = await serviceSupabase
         .from("strategies")
-        .select("id, name, params")
+        .select("id, name, params_json, universe_config_json")
         .eq("user_id", userId)
         .eq("is_enabled", true) as { data: any[] | null; error: any };
 
@@ -103,15 +103,16 @@ export async function GET(
         userId,
         count: strategiesData?.length || 0,
         error: strategiesError,
-        showStrategies: settings.show_strategies
+        showStrategies: settings.show_strategies,
+        strategies: strategiesData
       });
 
       strategies = (strategiesData || []).map((s: any) => ({
         id: s.id,
         name: s.name,
-        universe: s.params?.universe?.type || "unknown",
-        longPositions: s.params?.execution?.top_n || 0,
-        shortPositions: s.params?.execution?.short_n || 0,
+        universe: s.universe_config_json?.type || "unknown",
+        longPositions: s.params_json?.long_n || 0,
+        shortPositions: s.params_json?.short_n || 0,
       }));
     }
 
