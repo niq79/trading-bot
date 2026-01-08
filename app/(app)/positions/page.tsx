@@ -75,12 +75,16 @@ export default async function PositionsPage() {
     (sum, p) => sum + parseFloat(p.market_value),
     0
   );
-  const totalCost = positions.reduce(
-    (sum, p) => sum + parseFloat(p.cost_basis),
+  const unrealizedPnL = positions.reduce(
+    (sum, p) => sum + parseFloat(p.unrealized_pl),
     0
   );
-  const totalPnL = totalValue - totalCost;
-  const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+  
+  // Calculate true total P&L based on Alpaca paper trading starting balance of $100k
+  const INITIAL_PAPER_BALANCE = 100000;
+  const currentEquity = account ? parseFloat(account.equity) : 0;
+  const totalPnL = currentEquity - INITIAL_PAPER_BALANCE;
+  const totalPnLPercent = (totalPnL / INITIAL_PAPER_BALANCE) * 100;
 
   return (
     <div className="p-6 space-y-6">
@@ -90,12 +94,30 @@ export default async function PositionsPage() {
       />
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Equity</CardDescription>
+            <CardTitle className="text-2xl">
+              ${account ? parseFloat(account.equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Portfolio Value</CardDescription>
             <CardTitle className="text-2xl">
               ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Cash Balance</CardDescription>
+            <CardTitle className="text-2xl">
+              ${account ? parseFloat(account.cash).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -114,15 +136,6 @@ export default async function PositionsPage() {
             <CardDescription>Return %</CardDescription>
             <CardTitle className={`text-2xl ${totalPnLPercent >= 0 ? "text-success" : "text-destructive"}`}>
               {totalPnLPercent >= 0 ? "+" : ""}{totalPnLPercent.toFixed(2)}%
-            </CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Cash Balance</CardDescription>
-            <CardTitle className="text-2xl">
-              ${account ? parseFloat(account.cash).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -178,7 +191,7 @@ export default async function PositionsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={isShort ? "destructive" : "default"}>
+                        <Badge className={isShort ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}>
                           {isShort ? 'Short' : 'Long'}
                         </Badge>
                       </TableCell>

@@ -28,8 +28,9 @@ interface Strategy {
 interface Performance {
   totalEquity: number | null;
   portfolioValue: number | null;
-  dayPL: number | null;
-  dayPLPercent: string;
+  cashBalance: number | null;
+  totalPnL: number | null;
+  totalPnLPercent: string;
 }
 
 interface PortfolioData {
@@ -115,15 +116,7 @@ export default function PublicPortfolioPage() {
               <CardTitle>Performance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {showDollarAmounts && data.performance.portfolioValue !== null && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Portfolio Value</p>
-                    <p className="text-2xl font-bold">
-                      ${data.performance.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {showDollarAmounts && data.performance.totalEquity !== null && (
                   <div>
                     <p className="text-sm text-muted-foreground">Total Equity</p>
@@ -132,26 +125,42 @@ export default function PublicPortfolioPage() {
                     </p>
                   </div>
                 )}
-                {showDollarAmounts && data.performance.dayPL !== null && (
+                {showDollarAmounts && data.performance.portfolioValue !== null && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Day P/L</p>
-                    <p className={`text-2xl font-bold ${parseFloat(data.performance.dayPLPercent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {parseFloat(data.performance.dayPLPercent) >= 0 ? '+' : ''}
-                      ${data.performance.dayPL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className="text-sm text-muted-foreground">Portfolio Value</p>
+                    <p className="text-2xl font-bold">
+                      ${data.performance.portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
+                {showDollarAmounts && data.performance.cashBalance !== null && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cash Balance</p>
+                    <p className="text-2xl font-bold">
+                      ${data.performance.cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                )}
+                {showDollarAmounts && data.performance.totalPnL !== null && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total P/L</p>
+                    <p className={`text-2xl font-bold ${parseFloat(data.performance.totalPnLPercent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {parseFloat(data.performance.totalPnLPercent) >= 0 ? '+' : ''}
+                      ${data.performance.totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Day P/L %</p>
+                  <p className="text-sm text-muted-foreground">Return %</p>
                   <div className="flex items-center gap-2">
-                    {parseFloat(data.performance.dayPLPercent) >= 0 ? (
+                    {parseFloat(data.performance.totalPnLPercent) >= 0 ? (
                       <TrendingUp className="h-5 w-5 text-green-600" />
                     ) : (
                       <TrendingDown className="h-5 w-5 text-red-600" />
                     )}
-                    <p className={`text-2xl font-bold ${parseFloat(data.performance.dayPLPercent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {parseFloat(data.performance.dayPLPercent) >= 0 ? '+' : ''}
-                      {data.performance.dayPLPercent}%
+                    <p className={`text-2xl font-bold ${parseFloat(data.performance.totalPnLPercent) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {parseFloat(data.performance.totalPnLPercent) >= 0 ? '+' : ''}
+                      {data.performance.totalPnLPercent}%
                     </p>
                   </div>
                 </div>
@@ -189,7 +198,7 @@ export default function PublicPortfolioPage() {
                     <TableRow key={position.symbol}>
                       <TableCell className="font-bold">{position.symbol}</TableCell>
                       <TableCell>
-                        <Badge variant={position.side === "long" ? "default" : "secondary"}>
+                        <Badge className={position.side === "short" ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}>
                           {position.side}
                         </Badge>
                       </TableCell>

@@ -119,15 +119,17 @@ export async function GET(
     // Calculate performance metrics if enabled
     let performance = null;
     if (settings.show_performance) {
-      const lastEquity = parseFloat(account.last_equity);
-      const dayPL = totalEquity - lastEquity;
-      const dayPLPercent = ((dayPL / lastEquity) * 100).toFixed(2);
+      // Calculate true total P&L based on Alpaca paper trading starting balance of $100k
+      const INITIAL_PAPER_BALANCE = 100000;
+      const totalPnL = totalEquity - INITIAL_PAPER_BALANCE;
+      const totalPnLPercent = ((totalPnL / INITIAL_PAPER_BALANCE) * 100).toFixed(2);
 
       performance = {
         totalEquity: showDollarAmounts ? totalEquity : null,
         portfolioValue: showDollarAmounts ? portfolioValue : null,
-        dayPL: showDollarAmounts ? dayPL : null,
-        dayPLPercent,
+        cashBalance: showDollarAmounts ? parseFloat(account.cash) : null,
+        totalPnL: showDollarAmounts ? totalPnL : null,
+        totalPnLPercent,
       };
     }
 
