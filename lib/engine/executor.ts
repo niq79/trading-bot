@@ -45,9 +45,9 @@ export interface OrderResult {
   symbol: string;
   side: "buy" | "sell";
   notional: number;
-  status: "success" | "failed" | "simulated";
+  status: "success" | "failed" | "simulated" | "skipped";
   error?: string;
-  orderId?: string;
+  orderId?: string | null;
 }
 
 export interface ExecutionResult {
@@ -445,14 +445,17 @@ export async function executeStrategy(
     if (recordOwnership && !dryRun) {
       try {
         // Map order results to match recordExecution signature
-        const recordableOrders = orderResults.map(o => ({
-          symbol: o.symbol,
-          side: o.side,
-          notional: o.notional,
-          status: (o.status === "simulated" ? "success" : o.status) as "success" | "failed",
-          orderId: o.orderId,
-          error: o.error,
-        }));
+        // Filter out skipped orders since they weren't actually placed
+        const recordableOrders = orderResults
+          .filter(o => o.status !== "skipped")
+          .map(o => ({
+            symbol: o.symbol,
+            side: o.side,
+            notional: o.notional,
+            status: (o.status === "simulated" ? "success" : o.status) as "success" | "failed",
+            orderId: o.orderId || undefined,
+            error: o.error,
+          }));
         
         await recordExecution(
           strategy.user_id,
