@@ -308,15 +308,15 @@ export async function executeStrategy(
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
                 if (currentPos && currentPos.qty > 0) {
-                  // Selling a long position - close it completely
-                  qty = Math.floor(currentPos.qty);
+                  // Selling a long position - close it completely (round UP to sell fractional part)
+                  qty = Math.ceil(currentPos.qty);
                   console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
                 } else if (currentPos && currentPos.qty < 0) {
                   // Already short - check if we have enough to cover
                   const availableShort = Math.abs(currentPos.qty);
-                  if (qty > Math.floor(availableShort)) {
+                  if (qty > Math.ceil(availableShort)) {
                     console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, but only ${availableShort.toFixed(6)} short`);
-                    qty = Math.floor(availableShort);
+                    qty = Math.ceil(availableShort);
                   }
                 }
                 // If no position exists, this is opening a new short - use calculated qty
@@ -383,15 +383,15 @@ export async function executeStrategy(
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
                 if (currentPos && currentPos.qty > 0) {
-                  // Selling a long position - close it completely
-                  qty = Math.floor(currentPos.qty);
+                  // Selling a long position - close it completely (round UP to sell fractional part)
+                  qty = Math.ceil(currentPos.qty);
                   console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
                 } else if (currentPos && currentPos.qty < 0) {
                   // Covering a short position
                   const availableShort = Math.abs(currentPos.qty);
-                  if (qty > Math.floor(availableShort)) {
+                  if (qty > Math.ceil(availableShort)) {
                     console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, only ${availableShort.toFixed(6)} available`);
-                    qty = Math.floor(availableShort);
+                    qty = Math.ceil(availableShort);
                   }
                 }
               }
