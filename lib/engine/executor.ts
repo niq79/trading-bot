@@ -303,6 +303,15 @@ export async function executeStrategy(
               const currentPrice = bars[0].c;
               let qty = Math.floor(order.notional / currentPrice);
               
+              // For sell orders, cap at actual shares owned to avoid insufficient qty errors
+              if (order.side === "sell") {
+                const currentPos = currentPositions.find(p => p.symbol === order.symbol);
+                if (currentPos && Math.abs(currentPos.qty) < qty) {
+                  console.log(`⚠ Capping ${order.symbol} sell: requested ${qty} shares, but only ${Math.abs(currentPos.qty)} available`);
+                  qty = Math.floor(Math.abs(currentPos.qty));
+                }
+              }
+              
               // Round up to 1 share minimum for incremental progress
               if (qty === 0) {
                 qty = 1;
@@ -358,7 +367,16 @@ export async function executeStrategy(
                 throw new Error("Cannot get current price for whole share calculation");
               }
               const currentPrice = bars[0].c;
-              const qty = Math.floor(order.notional / currentPrice);
+              let qty = Math.floor(order.notional / currentPrice);
+              
+              // For sell orders, cap at actual shares owned to avoid insufficient qty errors
+              if (order.side === "sell") {
+                const currentPos = currentPositions.find(p => p.symbol === order.symbol);
+                if (currentPos && Math.abs(currentPos.qty) < qty) {
+                  console.log(`⚠ Capping ${order.symbol} sell: requested ${qty} shares, but only ${Math.abs(currentPos.qty).toFixed(6)} available`);
+                  qty = Math.floor(Math.abs(currentPos.qty));
+                }
+              }
               
               if (qty === 0) {
                 throw new Error(`Notional $${order.notional.toFixed(2)} too small for whole shares at $${currentPrice.toFixed(2)}/share`);
