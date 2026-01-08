@@ -568,10 +568,27 @@ export async function executeStrategy(
                 continue;
               }
               
-              // Retry with calculated qty (may be fractional)
+              // For non-fractionable assets, round to whole shares
+              // BUY: floor to avoid over-buying, SELL: use actual owned qty (already handled above)
+              const finalQty = order.side === "buy" ? Math.floor(qty) : qty;
+              
+              // Skip if rounded to zero
+              if (finalQty < 0.000001) {
+                console.log(`⏭️ ${order.symbol}: Skipping - notional $${order.notional.toFixed(2)} rounds to 0 whole shares at $${currentPrice.toFixed(2)}/share`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  error: "Notional too small for whole share order",
+                });
+                continue;
+              }
+              
+              // Retry with calculated qty (whole shares for non-fractionable assets)
               const alpacaOrder = await alpacaClient.placeOrder({
                 symbol: order.symbol,
-                qty: qty.toString(),
+                qty: finalQty.toString(),
                 side: order.side,
                 type: "market",
                 time_in_force: timeInForce,
@@ -580,11 +597,11 @@ export async function executeStrategy(
               orderResults.push({
                 symbol: order.symbol,
                 side: order.side,
-                notional: qty * currentPrice,
+                notional: finalQty * currentPrice,
                 status: "success",
                 orderId: alpacaOrder.id,
               });
-              console.log(`✓ ${order.symbol}: Placed ${qty.toFixed(6)} shares at ~$${currentPrice.toFixed(2)}`);
+              console.log(`✓ ${order.symbol}: Placed ${finalQty.toFixed(6)} shares at ~$${currentPrice.toFixed(2)}`);
             } else {
               // Different error, re-throw
               throw notionalError;
