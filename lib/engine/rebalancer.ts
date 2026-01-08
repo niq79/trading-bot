@@ -38,15 +38,21 @@ export function calculateRebalanceOrders(
   // First, identify positions to close (not in targets)
   // Apply rebalance_fraction to exits as well for consistency
   for (const position of currentPositions) {
-    if (!targetSymbols.has(position.symbol) && position.market_value > 0) {
+    // Skip positions with no value (already flat)
+    if (Math.abs(position.market_value) < 0.01) continue;
+    
+    if (!targetSymbols.has(position.symbol)) {
       symbolsToClose.push(position.symbol);
-      const exitAmount = position.market_value * fraction;
+      const isShort = position.market_value < 0;
+      const exitAmount = Math.abs(position.market_value) * fraction;
       const stepPercent = (fraction * 100).toFixed(0);
+      
       orders.push({
         symbol: position.symbol,
-        side: "sell",
+        side: isShort ? "buy" : "sell",  // Buy to close short, sell to close long
         notional: exitAmount,
-        reason: `Exit position not in target universe (${stepPercent}% step)`,
+        reason: `Exit ${isShort ? 'short' : 'long'} position not in target universe (${stepPercent}% step)`,
+        isShortTarget: isShort,
       });
     }
   }
@@ -63,26 +69,50 @@ export function calculateRebalanceOrders(
       continue;
     }
 
-    // Determine position type for reason
+    // Determine position type and action for reason
     const positionType = target.side === 'short' ? 'short' : 'long';
     const weightPercent = (Math.abs(target.targetWeight) * 100).toFixed(1);
     const stepPercent = (fraction * 100).toFixed(0);
     const isShortTarget = target.side === 'short';
+    
+    // For shorts: currentValue and targetValue are both negative (or zero)
+    // Opening short: current=0, target<0 → diff<0 → SELL
+    // Closing short: current<0, target=0 → diff>0 → BUY
+    // For longs: both positive
+    const hasCurrentPosition = Math.abs(target.currentValue) > 0.01;
+    const currentlyShort = target.currentValue < -0.01;
+    const currentlyLong = target.currentValue > 0.01;
 
     if (diff > 0) {
+      // Positive diff: BUY order (increase long OR cover short)
+      let action = 'Increase';
+      if (currentlyShort && !isShortTarget) {
+        action = 'Cover short and establish';
+      } else if (currentlyShort && isShortTarget) {
+        action = 'Cover';
+      }
+      
       orders.push({
         symbol: target.symbol,
         side: "buy",
         notional: diff,
-        reason: `Increase ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
+        reason: `${action} ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
         isShortTarget,
       });
     } else if (diff < 0) {
+      // Negative diff: SELL order (reduce long OR open short)
+      let action = 'Reduce';
+      if (!hasCurrentPosition && isShortTarget) {
+        action = 'Open';
+      } else if (currentlyLong && isShortTarget) {
+        action = 'Close long and open';
+      }
+      
       orders.push({
         symbol: target.symbol,
         side: "sell",
         notional: Math.abs(diff),
-        reason: `Reduce ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
+        reason: `${action} ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
         isShortTarget,
       });
     }

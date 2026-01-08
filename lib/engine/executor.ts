@@ -218,18 +218,33 @@ export async function executeStrategy(
       return symbol;
     };
     
+    // Create map of ALL positions for conflict detection
+    const allPositionsMap = new Map<string, { qty: number; symbol: string }>();
+    for (const p of allPositions) {
+      const normalized = toUniverseFormat(p.symbol);
+      allPositionsMap.set(normalized, { qty: parseFloat(p.qty), symbol: p.symbol });
+    }
+    
     const currentPositions: CurrentPosition[] = allPositions
       .filter(p => {
         // Check both symbol formats (with and without slash for crypto)
         const variants = normalizeSymbol(p.symbol);
         return variants.some(v => ownedSymbols.has(v));
       })
-      .map((p) => ({
-        symbol: toUniverseFormat(p.symbol), // Normalize to universe format
-        qty: parseFloat(p.qty),
-        market_value: parseFloat(p.market_value),
-        current_price: parseFloat(p.current_price),
-      }));
+      .map((p) => {
+        const qty = parseFloat(p.qty);
+        const marketValue = parseFloat(p.market_value);
+        // For short positions (qty < 0), make market_value negative for correct rebalancing math
+        // This ensures: closing a short (target=0, current=-$1000) → diff=+$1000 → BUY order
+        const signedMarketValue = qty < 0 ? -Math.abs(marketValue) : marketValue;
+        
+        return {
+          symbol: toUniverseFormat(p.symbol), // Normalize to universe format
+          qty,
+          market_value: signedMarketValue,
+          current_price: parseFloat(p.current_price),
+        };
+      });
 
     console.log(`Strategy ${strategy.name}: Tracking ${ownedSymbols.size} owned positions, found ${currentPositions.length} in account`);
 
@@ -288,44 +303,59 @@ export async function executeStrategy(
           // Crypto orders require 'gtc' (24/7 trading), stocks use 'day'
           const isCrypto = order.symbol.includes('/');
           const timeInForce = isCrypto ? 'gtc' : 'day';
-          const isShort = order.isShortTarget === true;
           
-          console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})${isShort ? ' [SHORT]' : ''}`);
+          // Check if we have an actual short position (negative qty)
+          const currentPos = currentPositions.find(p => p.symbol === order.symbol);
+          const isActualShort = currentPos && currentPos.qty < 0;
+          const isOpeningShort = order.isShortTarget && order.side === "sell" && (!currentPos || currentPos.qty >= 0);
+          
+          // CRITICAL: Check for conflicts when opening shorts
+          if (isOpeningShort) {
+            const accountPosition = allPositionsMap.get(order.symbol);
+            if (accountPosition && accountPosition.qty > 0) {
+              console.log(`⚠️ ${order.symbol}: Cannot open short - conflicting long position (${accountPosition.qty.toFixed(6)} shares) from another strategy`);
+              orderResults.push({
+                symbol: order.symbol,
+                side: order.side,
+                notional: order.notional,
+                status: "skipped",
+                error: "Cannot open short - existing long position from another strategy",
+              });
+              continue;
+            }
+          }
+          
+          console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})${isActualShort ? ' [SHORT POSITION]' : ''}${isOpeningShort ? ' [OPENING SHORT]' : ''}`);
           
           try {
-            // For short positions, must use whole shares (Alpaca doesn't support fractional shorts)
-            if (isShort) {
-              // Get current price and calculate whole shares
+            // For ACTUAL short positions (negative qty), must use whole shares when covering
+            if (isActualShort && order.side === "buy") {
+              // Covering a short - use whole shares
               const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
               if (bars.length === 0) {
-                throw new Error("Cannot get current price for short order");
+                throw new Error("Cannot get current price for short cover");
               }
               const currentPrice = bars[0].c;
+              const availableShort = Math.abs(currentPos.qty);
               let qty = Math.floor(order.notional / currentPrice);
               
-              // For sell orders, sell ALL shares owned to avoid fractional remnants
-              // This is cleaner than leaving 0.xyz shares behind
-              if (order.side === "sell") {
-                const currentPos = currentPositions.find(p => p.symbol === order.symbol);
-                if (currentPos && currentPos.qty > 0) {
-                  // Selling a long position - close it completely (round UP to sell fractional part)
-                  qty = Math.ceil(currentPos.qty);
-                  console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
-                } else if (currentPos && currentPos.qty < 0) {
-                  // Already short - check if we have enough to cover
-                  const availableShort = Math.abs(currentPos.qty);
-                  if (qty > Math.ceil(availableShort)) {
-                    console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, but only ${availableShort.toFixed(6)} short`);
-                    qty = Math.ceil(availableShort);
-                  }
-                }
-                // If no position exists, this is opening a new short - use calculated qty
+              // Cap at actual short position size
+              if (qty > availableShort) {
+                console.log(`⚠️ ${order.symbol}: Capping short cover to ${availableShort.toFixed(6)} shares (requested ${qty})`);
+                qty = Math.ceil(availableShort);
               }
               
-              // Round up to 1 share minimum for incremental progress (buy orders or new shorts)
-              if (qty === 0 && order.side === "buy") {
-                qty = 1;
-                console.log(`📈 Rounding up ${order.symbol}: Notional $${order.notional.toFixed(2)} rounded to 1 share at $${currentPrice.toFixed(2)}/share`);
+              // Skip if qty is zero
+              if (qty === 0) {
+                console.log(`⏭️ ${order.symbol}: Skipping - notional too small for short cover`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  error: "Notional too small for whole share order",
+                });
+                continue;
               }
               
               // Place order with whole shares
@@ -340,11 +370,67 @@ export async function executeStrategy(
               orderResults.push({
                 symbol: order.symbol,
                 side: order.side,
-                notional: qty * currentPrice, // Update notional to reflect actual order size
+                notional: qty * currentPrice,
                 status: "success",
                 orderId: alpacaOrder.id,
               });
-              console.log(`✓ ${order.symbol} short order submitted successfully with ${qty} shares (order ID: ${alpacaOrder.id})`);
+              console.log(`✓ ${order.symbol} short cover submitted with ${qty} shares (order ID: ${alpacaOrder.id})`);
+              continue;
+            }
+            
+            // For OPENING short positions (SELL when not currently short), must use whole shares
+            if (isOpeningShort) {
+              // Check if there's a conflicting long position from another strategy
+              const accountPosition = allPositionsMap.get(order.symbol);
+              if (accountPosition && accountPosition.qty > 0) {
+                console.log(`⚠️ ${order.symbol}: Cannot open short - conflicting long position (${accountPosition.qty.toFixed(6)} shares) from another strategy`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  error: "Cannot open short - existing long position from another strategy",
+                });
+                continue;
+              }
+              
+              const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
+              if (bars.length === 0) {
+                throw new Error("Cannot get current price for short order");
+              }
+              const currentPrice = bars[0].c;
+              let qty = Math.floor(order.notional / currentPrice);
+              
+              // Skip if qty is zero
+              if (qty === 0) {
+                console.log(`⏭️ ${order.symbol}: Skipping - notional $${order.notional.toFixed(2)} too small for opening short (need at least $${currentPrice.toFixed(2)})`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  error: "Notional too small for whole share short",
+                });
+                continue;
+              }
+              
+              // Place short order with whole shares
+              const alpacaOrder = await alpacaClient.placeOrder({
+                symbol: order.symbol,
+                qty: qty.toString(),
+                side: "sell",
+                type: "market",
+                time_in_force: timeInForce,
+              });
+              
+              orderResults.push({
+                symbol: order.symbol,
+                side: order.side,
+                notional: qty * currentPrice,
+                status: "success",
+                orderId: alpacaOrder.id,
+              });
+              console.log(`✓ ${order.symbol} opened short with ${qty} shares (order ID: ${alpacaOrder.id})`);
               continue;
             }
             
@@ -368,8 +454,85 @@ export async function executeStrategy(
           } catch (notionalError) {
             // If notional orders not supported, retry with qty (fractional shares may still work)
             const errorMsg = notionalError instanceof Error ? notionalError.message : "";
-            if (errorMsg.includes("not fractionable") || errorMsg.includes("40310000")) {
-              console.log(`${order.symbol} notional order failed, retrying with qty`);
+            if (errorMsg.includes("not fractionable") || errorMsg.includes("40310000") || errorMsg.includes("42210000")) {
+              console.log(`${order.symbol} notional order failed (${errorMsg.substring(0, 50)}...), retrying with qty`);
+              
+              // Check if this is opening a short position (SELL order marked as short target, no current position)
+              const isOpeningShortFallback = order.isShortTarget && order.side === "sell" && (!currentPos || currentPos.qty >= 0);
+              
+              if (isOpeningShortFallback) {
+                // Check if there's a conflicting long position from another strategy
+                const accountPosition = allPositionsMap.get(order.symbol);
+                if (accountPosition && accountPosition.qty > 0) {
+                  console.log(`⚠️ ${order.symbol}: Cannot open short - conflicting long position (${accountPosition.qty.toFixed(6)} shares) from another strategy`);
+                  orderResults.push({
+                    symbol: order.symbol,
+                    side: order.side,
+                    notional: order.notional,
+                    status: "skipped",
+                    error: "Cannot open short - existing long position from another strategy",
+                  });
+                  continue;
+                }
+                
+                // Opening short - must use whole shares
+                const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
+                if (bars.length === 0) {
+                  throw new Error("Cannot get current price for short order");
+                }
+                const currentPrice = bars[0].c;
+                let qty = Math.floor(order.notional / currentPrice);
+                
+                // Skip if qty is zero
+                if (qty === 0) {
+                  console.log(`⏭️ ${order.symbol}: Skipping - notional $${order.notional.toFixed(2)} too small for opening short (need at least $${currentPrice.toFixed(2)})`);
+                  orderResults.push({
+                    symbol: order.symbol,
+                    side: order.side,
+                    notional: order.notional,
+                    status: "skipped",
+                    error: "Notional too small for whole share short",
+                  });
+                  continue;
+                }
+                
+                // Place short order with whole shares
+                const alpacaOrder = await alpacaClient.placeOrder({
+                  symbol: order.symbol,
+                  qty: qty.toString(),
+                  side: "sell",
+                  type: "market",
+                  time_in_force: timeInForce,
+                });
+                
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: qty * currentPrice,
+                  status: "success",
+                  orderId: alpacaOrder.id,
+                });
+                console.log(`✓ ${order.symbol} opened short with ${qty} shares (order ID: ${alpacaOrder.id})`);
+                continue;
+              }
+              
+              // For SELL orders (not opening shorts), we must verify we own the position FIRST
+              // Otherwise Alpaca interprets it as short selling (not allowed with fractional)
+              if (order.side === "sell") {
+                const currentPos = currentPositions.find(p => p.symbol === order.symbol);
+                if (!currentPos || currentPos.qty <= 0) {
+                  // No long position to sell - skip this order
+                  console.log(`⏭️ ${order.symbol}: Skipping sell order - no long position to sell`);
+                  orderResults.push({
+                    symbol: order.symbol,
+                    side: order.side,
+                    notional: order.notional,
+                    status: "skipped",
+                    error: "No long position to sell",
+                  });
+                  continue;
+                }
+              }
               
               // Get current price and calculate shares
               const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
@@ -383,19 +546,29 @@ export async function executeStrategy(
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
                 if (currentPos) {
-                  const ownedQty = Math.abs(currentPos.qty);
+                  const ownedQty = currentPos.qty; // Use actual qty (already verified > 0 above)
+                  // Cap qty to what we actually own
                   if (qty > ownedQty) {
-                    console.log(`📊 ${order.symbol}: Capping sell to owned quantity (${ownedQty.toFixed(6)} shares)`);
+                    console.log(`📊 ${order.symbol}: Capping sell from ${qty.toFixed(6)} to owned quantity ${ownedQty.toFixed(6)} shares`);
                     qty = ownedQty;
                   }
                 }
               }
               
-              if (qty === 0) {
-                throw new Error(`Notional $${order.notional.toFixed(2)} too small at $${currentPrice.toFixed(2)}/share`);
+              // Skip if qty is effectively zero
+              if (qty < 0.000001) {
+                console.log(`⏭️ ${order.symbol}: Skipping - notional $${order.notional.toFixed(2)} too small at $${currentPrice.toFixed(2)}/share`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  error: "Notional too small for order",
+                });
+                continue;
               }
               
-              // Retry with whole shares
+              // Retry with calculated qty (may be fractional)
               const alpacaOrder = await alpacaClient.placeOrder({
                 symbol: order.symbol,
                 qty: qty.toString(),
@@ -411,7 +584,7 @@ export async function executeStrategy(
                 status: "success",
                 orderId: alpacaOrder.id,
               });
-              console.log(`✓ ${order.symbol}: Placed ${qty} whole shares at ~$${currentPrice.toFixed(2)}`);
+              console.log(`✓ ${order.symbol}: Placed ${qty.toFixed(6)} shares at ~$${currentPrice.toFixed(2)}`);
             } else {
               // Different error, re-throw
               throw notionalError;
