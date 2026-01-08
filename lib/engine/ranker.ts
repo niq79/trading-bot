@@ -411,24 +411,3 @@ function calculateSharpe(bars: Bar[]): number {
   // Annualized Sharpe ratio
   return (avgReturn / stdDev) * Math.sqrt(252);
 }
-  let losses = 0;
-
-  for (let i = bars.length - period; i < bars.length; i++) {
-    const change = bars[i].c - bars[i - 1].c;
-    if (change > 0) {
-      gains += change;
-    } else {
-      losses += Math.abs(change);
-    }
-  }
-
-  const avgGain = gains / period;
-  const avgLoss = losses / period;
-
-  if (avgLoss === 0) {
-    return 100;
-  }
-
-  const rs = avgGain / avgLoss;
-  return 100 - 100 / (1 + rs);
-}

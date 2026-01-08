@@ -60,33 +60,15 @@ export function StrategyForm({ strategy, mode, templateConfig }: StrategyFormPro
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Normalize deprecated metric names to new ones
-  const normalizeMetric = (metric: string): StrategyParams["ranking_metric"] => {
-    const metricMap: Record<string, StrategyParams["ranking_metric"]> = {
-      "momentum_5d": "momentum",
-      "momentum_10d": "momentum",
-      "momentum_20d": "momentum",
-      "momentum_60d": "momentum",
-      "volatility": "volatility_low",
-      "volume": "relative_volume",
-    };
-    return (metricMap[metric] as StrategyParams["ranking_metric"]) || (metric as StrategyParams["ranking_metric"]);
-  };
-
   // Build initial values from template if provided
   const initialParams: StrategyParams = templateConfig
     ? {
         ...DEFAULT_STRATEGY_PARAMS,
         long_n: templateConfig.topN,
         rebalance_fraction: templateConfig.rebalance,
-        ranking_metric: normalizeMetric(templateConfig.ranking),
+        ranking_metric: templateConfig.ranking as StrategyParams["ranking_metric"],
       }
     : ((strategy?.params_json as StrategyParams) ?? DEFAULT_STRATEGY_PARAMS);
-
-  // Normalize the ranking metric if it's deprecated
-  if (initialParams.ranking_metric) {
-    initialParams.ranking_metric = normalizeMetric(initialParams.ranking_metric);
-  }
 
   const initialUniverse: UniverseConfig = templateConfig
     ? {
