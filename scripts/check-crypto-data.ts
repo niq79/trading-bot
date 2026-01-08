@@ -1,6 +1,6 @@
 /**
  * Diagnostic script to check crypto data availability in Alpaca
- * Run: npx tsx check-crypto-data.ts
+ * Run: npx tsx scripts/check-crypto-data.ts
  * 
  * This will check which crypto symbols have sufficient historical data
  * to be used in strategies (minimum 5 days required for ranking)

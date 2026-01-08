@@ -4,7 +4,7 @@ Comprehensive automated testing for the trading bot strategy engine.
 
 ## Test Coverage
 
-### 1. Short Selling Tests (`test-short-selling.ts`)
+### 1. Short Selling Tests (`scripts/test-short-selling.ts`)
 - **7 tests** covering long/short position handling
 - Validates negative values for short positions
 - Tests weight distribution and capping for both sides
@@ -13,7 +13,7 @@ Comprehensive automated testing for the trading bot strategy engine.
 
 **Run:** `npm run test:short-selling`
 
-### 2. Crypto Trading Tests (`test-crypto.ts`)
+### 2. Crypto Trading Tests (`scripts/test-crypto.ts`)
 - **8 tests** for cryptocurrency trading
 - Validates BTC/USD symbol format (with slash)
 - Tests shorting prevention for crypto (Alpaca limitation)
@@ -23,7 +23,7 @@ Comprehensive automated testing for the trading bot strategy engine.
 
 **Run:** `npm run test:crypto`
 
-### 3. Strategy Suite Tests (`test-strategy-suite.ts`)
+### 3. Strategy Suite Tests (`scripts/test-strategy-suite.ts`)
 - **10 comprehensive tests** covering all strategy combinations
 - Tests universes: Mag7, Dow30, S&P 500, NASDAQ, Crypto
 - Tests strategies: Long-only, Long/Short

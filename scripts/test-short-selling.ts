@@ -2,9 +2,9 @@
  * Test script to verify short selling implementation
  */
 
-import { RankedSymbol } from "./lib/engine/ranker";
-import { calculateTargetPositions, CurrentPosition } from "./lib/engine/target-calculator";
-import { calculateRebalanceOrders } from "./lib/engine/rebalancer";
+import { RankedSymbol } from "../lib/engine/ranker";
+import { calculateTargetPositions, CurrentPosition } from "../lib/engine/target-calculator";
+import { calculateRebalanceOrders } from "../lib/engine/rebalancer";
 
 // Mock ranked symbols with long and short sides
 const rankedSymbols: RankedSymbol[] = [

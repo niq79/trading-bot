@@ -397,7 +397,7 @@ npm run test:crypto         # Test cryptocurrency trading
 npm run test:suite          # Test all strategy combinations
 ```
 
-See [TESTING.md](./TESTING.md) for detailed test documentation.
+See [TESTING.md](docs/TESTING.md) for detailed test documentation.
 
 **Test Coverage:**
 - ✅ 25 total tests (100% pass rate)

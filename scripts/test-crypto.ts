@@ -2,9 +2,9 @@
  * Test script to verify crypto trading implementation
  */
 
-import { RankedSymbol } from "./lib/engine/ranker";
-import { calculateTargetPositions, CurrentPosition } from "./lib/engine/target-calculator";
-import { calculateRebalanceOrders } from "./lib/engine/rebalancer";
+import { RankedSymbol } from "../lib/engine/ranker";
+import { calculateTargetPositions, CurrentPosition } from "../lib/engine/target-calculator";
+import { calculateRebalanceOrders } from "../lib/engine/rebalancer";
 
 // Mock crypto symbols
 const cryptoSymbols: RankedSymbol[] = [

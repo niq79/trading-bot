@@ -145,7 +145,7 @@ Look for errors in browser console (F12)
 
 ### Issue: Weights exceed max_weight
 **Cause:** applyMaxWeightCap not working
-**Fix:** Run `npx tsx test-short-selling.ts` - should all pass
+**Fix:** Run `npx tsx scripts/test-short-selling.ts` - should all pass
 
 ### Issue: Order reasons don't mention "short"
 **Cause:** Rebalancer not accessing target.side

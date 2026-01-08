@@ -8,12 +8,12 @@
  * - Position Limits: 10%, 20%, 30%
  * - Ranking Metrics: Momentum, Volatility, Volume
  * 
- * Run with: npx tsx test-strategy-suite.ts
+ * Run with: npx tsx scripts/test-strategy-suite.ts
  */
 
-import { rankSymbols, RankingConfig } from "./lib/engine/ranker";
-import { calculateTargetPositions, CurrentPosition } from "./lib/engine/target-calculator";
-import { calculateRebalanceOrders } from "./lib/engine/rebalancer";
+import { rankSymbols, RankingConfig } from "../lib/engine/ranker";
+import { calculateTargetPositions, CurrentPosition } from "../lib/engine/target-calculator";
+import { calculateRebalanceOrders } from "../lib/engine/rebalancer";
 
 interface TestCase {
   name: string;

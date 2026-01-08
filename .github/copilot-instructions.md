@@ -218,11 +218,11 @@ npm run dev                 # Start dev server at localhost:3000
 3. For production, migrations run automatically on deployment
 
 ### Debugging Strategy Execution
-Use diagnostic scripts (see [TESTING.md](TESTING.md)):
+Use diagnostic scripts (see [TESTING.md](docs/TESTING.md)):
 ```bash
-npx tsx check-crypto-data.ts          # Check if crypto bars are available
-npx tsx check-crypto-strategy-orders.ts  # Test crypto strategy dry-run
-npx tsx debug-crypto-symbols.ts       # Validate symbol format
+npx tsx scripts/check-crypto-data.ts          # Check if crypto bars are available
+npx tsx scripts/check-crypto-strategy-orders.ts  # Test crypto strategy dry-run
+npx tsx scripts/debug-crypto-symbols.ts       # Validate symbol format
 ```
 
 ### Manual Strategy Execution
@@ -241,14 +241,14 @@ Add `?dry_run=true` to simulate without placing orders.
 1. Update `StrategyConfig` type in `lib/engine/executor.ts`
 2. Add field to `strategy-form.tsx` with validation
 3. Use parameter in `executor.ts` or relevant engine file
-4. Update tests in `test-strategy-suite.ts`
+4. Update tests in `scripts/test-strategy-suite.ts`
 5. Add migration if storing in database schema
 
 ### Adding a New Ranking Metric
 1. Implement calculation in `calculateMetric()` in `lib/engine/ranker.ts`
 2. Add to `RankingMetric` type
 3. Update `strategy-form.tsx` select options
-4. Add test case in `test-strategy-suite.ts`
+4. Add test case in `scripts/test-strategy-suite.ts`
 
 ### Changing Rebalancing Logic
 Edit `calculateRebalanceOrders()` in `lib/engine/rebalancer.ts`. **This is critical code** - always add test cases.
@@ -273,7 +273,7 @@ Edit `calculateRebalanceOrders()` in `lib/engine/rebalancer.ts`. **This is criti
 
 ## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for full instructions:
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for full instructions:
 
 1. Push to GitHub
 2. Deploy to Vercel with environment variables

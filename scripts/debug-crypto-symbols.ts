@@ -1,6 +1,6 @@
 /**
  * Debug script to check which crypto symbols Alpaca supports
- * Run: npx tsx debug-crypto-symbols.ts
+ * Run: npx tsx scripts/debug-crypto-symbols.ts
  */
 
 import { AlpacaClient } from './lib/alpaca/client';
