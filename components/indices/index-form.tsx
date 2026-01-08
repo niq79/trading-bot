@@ -328,25 +328,23 @@ export function SyntheticIndexForm({ index, mode }: SyntheticIndexFormProps) {
             </div>
 
             <Tabs defaultValue="manual" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="manual">Add Manually</TabsTrigger>
-                <TabsTrigger value="bulk">
-                  <span className="flex items-center gap-1">
-                    Bulk Add
-                    <HelpPopover title="Bulk Paste Feature">
-                      <p>Copy a list of symbols from anywhere and paste them here.</p>
-                      <p className="mt-2 font-medium">Supported formats:</p>
-                      <ul className="list-disc list-inside space-y-1 mt-1 text-xs">
-                        <li>Comma-separated: AAPL, MSFT, GOOGL</li>
-                        <li>Space-separated: AAPL MSFT GOOGL</li>
-                        <li>Line-separated (one per line)</li>
-                        <li>Mixed text: "Buy AAPL and MSFT"</li>
-                      </ul>
-                      <p className="mt-2">The bot validates all symbols with Alpaca and only adds valid ones.</p>
-                    </HelpPopover>
-                  </span>
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex items-center gap-2">
+                <TabsList className="grid flex-1 grid-cols-2">
+                  <TabsTrigger value="manual">Add Manually</TabsTrigger>
+                  <TabsTrigger value="bulk">Bulk Add</TabsTrigger>
+                </TabsList>
+                <HelpPopover title="Bulk Paste Feature">
+                  <p>Copy a list of symbols from anywhere and paste them here.</p>
+                  <p className="mt-2 font-medium">Supported formats:</p>
+                  <ul className="list-disc list-inside space-y-1 mt-1 text-xs">
+                    <li>Comma-separated: AAPL, MSFT, GOOGL</li>
+                    <li>Space-separated: AAPL MSFT GOOGL</li>
+                    <li>Line-separated (one per line)</li>
+                    <li>Mixed text: "Buy AAPL and MSFT"</li>
+                  </ul>
+                  <p className="mt-2">The bot validates all symbols with Alpaca and only adds valid ones.</p>
+                </HelpPopover>
+              </div>
 
               <TabsContent value="manual" className="space-y-2 mt-4">
                 {components.map((component, index) => (
