@@ -303,17 +303,27 @@ export async function executeStrategy(
               const currentPrice = bars[0].c;
               let qty = Math.floor(order.notional / currentPrice);
               
-              // For sell orders, cap at actual shares owned to avoid insufficient qty errors
+              // For sell orders, sell ALL shares owned to avoid fractional remnants
+              // This is cleaner than leaving 0.xyz shares behind
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
-                if (currentPos && Math.abs(currentPos.qty) < qty) {
-                  console.log(`⚠ Capping ${order.symbol} sell: requested ${qty} shares, but only ${Math.abs(currentPos.qty)} available`);
-                  qty = Math.floor(Math.abs(currentPos.qty));
+                if (currentPos && currentPos.qty > 0) {
+                  // Selling a long position - close it completely
+                  qty = Math.floor(currentPos.qty);
+                  console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
+                } else if (currentPos && currentPos.qty < 0) {
+                  // Already short - check if we have enough to cover
+                  const availableShort = Math.abs(currentPos.qty);
+                  if (qty > Math.floor(availableShort)) {
+                    console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, but only ${availableShort.toFixed(6)} short`);
+                    qty = Math.floor(availableShort);
+                  }
                 }
+                // If no position exists, this is opening a new short - use calculated qty
               }
               
-              // Round up to 1 share minimum for incremental progress
-              if (qty === 0) {
+              // Round up to 1 share minimum for incremental progress (buy orders or new shorts)
+              if (qty === 0 && order.side === "buy") {
                 qty = 1;
                 console.log(`📈 Rounding up ${order.symbol}: Notional $${order.notional.toFixed(2)} rounded to 1 share at $${currentPrice.toFixed(2)}/share`);
               }
@@ -369,12 +379,20 @@ export async function executeStrategy(
               const currentPrice = bars[0].c;
               let qty = Math.floor(order.notional / currentPrice);
               
-              // For sell orders, cap at actual shares owned to avoid insufficient qty errors
+              // For sell orders, sell ALL shares owned to avoid fractional remnants
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
-                if (currentPos && Math.abs(currentPos.qty) < qty) {
-                  console.log(`⚠ Capping ${order.symbol} sell: requested ${qty} shares, but only ${Math.abs(currentPos.qty).toFixed(6)} available`);
-                  qty = Math.floor(Math.abs(currentPos.qty));
+                if (currentPos && currentPos.qty > 0) {
+                  // Selling a long position - close it completely
+                  qty = Math.floor(currentPos.qty);
+                  console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
+                } else if (currentPos && currentPos.qty < 0) {
+                  // Covering a short position
+                  const availableShort = Math.abs(currentPos.qty);
+                  if (qty > Math.floor(availableShort)) {
+                    console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, only ${availableShort.toFixed(6)} available`);
+                    qty = Math.floor(availableShort);
+                  }
                 }
               }
               
