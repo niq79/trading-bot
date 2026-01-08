@@ -301,19 +301,12 @@ export async function executeStrategy(
                 throw new Error("Cannot get current price for short order");
               }
               const currentPrice = bars[0].c;
-              const qty = Math.floor(order.notional / currentPrice);
+              let qty = Math.floor(order.notional / currentPrice);
               
+              // Round up to 1 share minimum for incremental progress
               if (qty === 0) {
-                console.log(`⚠ Skipping ${order.symbol}: Notional $${order.notional.toFixed(2)} too small for 1 share at $${currentPrice.toFixed(2)}/share`);
-                orderResults.push({
-                  symbol: order.symbol,
-                  side: order.side,
-                  notional: order.notional,
-                  status: "skipped",
-                  orderId: null,
-                  error: `Notional too small for whole shares (need $${currentPrice.toFixed(2)}, have $${order.notional.toFixed(2)})`,
-                });
-                continue;
+                qty = 1;
+                console.log(`📈 Rounding up ${order.symbol}: Notional $${order.notional.toFixed(2)} rounded to 1 share at $${currentPrice.toFixed(2)}/share`);
               }
               
               // Place order with whole shares
@@ -328,7 +321,7 @@ export async function executeStrategy(
               orderResults.push({
                 symbol: order.symbol,
                 side: order.side,
-                notional: order.notional,
+                notional: qty * currentPrice, // Update notional to reflect actual order size
                 status: "success",
                 orderId: alpacaOrder.id,
               });
