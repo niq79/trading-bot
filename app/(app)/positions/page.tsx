@@ -148,6 +148,7 @@ export default async function PositionsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Symbol</TableHead>
+                  <TableHead>Side</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
                   <TableHead className="text-right">Avg Cost</TableHead>
                   <TableHead className="text-right">Current Price</TableHead>
@@ -158,6 +159,8 @@ export default async function PositionsPage() {
               </TableHeader>
               <TableBody>
                 {positions.map((position) => {
+                  const qty = parseFloat(position.qty);
+                  const isShort = qty < 0;
                   const pnl = parseFloat(position.unrealized_pl);
                   const pnlPercent = parseFloat(position.unrealized_plpc) * 100;
                   const isPositive = pnl >= 0;
@@ -174,8 +177,13 @@ export default async function PositionsPage() {
                           {position.symbol}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Badge variant={isShort ? "destructive" : "default"}>
+                          {isShort ? 'Short' : 'Long'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
-                        {parseFloat(position.qty).toFixed(4)}
+                        {Math.abs(qty).toFixed(4)}
                       </TableCell>
                       <TableCell className="text-right">
                         ${parseFloat(position.avg_entry_price).toFixed(2)}

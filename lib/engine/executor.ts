@@ -288,11 +288,55 @@ export async function executeStrategy(
           // Crypto orders require 'gtc' (24/7 trading), stocks use 'day'
           const isCrypto = order.symbol.includes('/');
           const timeInForce = isCrypto ? 'gtc' : 'day';
+          const isShort = order.isShortTarget === true;
           
-          console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})`);
+          console.log(`Placing order: ${order.side} ${order.symbol} $${order.notional.toFixed(2)} (${timeInForce})${isShort ? ' [SHORT]' : ''}`);
           
           try {
-            // Try notional order first (supports fractional shares)
+            // For short positions, must use whole shares (Alpaca doesn't support fractional shorts)
+            if (isShort) {
+              // Get current price and calculate whole shares
+              const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
+              if (bars.length === 0) {
+                throw new Error("Cannot get current price for short order");
+              }
+              const currentPrice = bars[0].c;
+              const qty = Math.floor(order.notional / currentPrice);
+              
+              if (qty === 0) {
+                console.log(`⚠ Skipping ${order.symbol}: Notional $${order.notional.toFixed(2)} too small for 1 share at $${currentPrice.toFixed(2)}/share`);
+                orderResults.push({
+                  symbol: order.symbol,
+                  side: order.side,
+                  notional: order.notional,
+                  status: "skipped",
+                  orderId: null,
+                  error: `Notional too small for whole shares (need $${currentPrice.toFixed(2)}, have $${order.notional.toFixed(2)})`,
+                });
+                continue;
+              }
+              
+              // Place order with whole shares
+              const alpacaOrder = await alpacaClient.placeOrder({
+                symbol: order.symbol,
+                qty: qty.toString(),
+                side: order.side,
+                type: "market",
+                time_in_force: timeInForce,
+              });
+              
+              orderResults.push({
+                symbol: order.symbol,
+                side: order.side,
+                notional: order.notional,
+                status: "success",
+                orderId: alpacaOrder.id,
+              });
+              console.log(`✓ ${order.symbol} short order submitted successfully with ${qty} shares (order ID: ${alpacaOrder.id})`);
+              continue;
+            }
+            
+            // Try notional order first (supports fractional shares for longs)
             const alpacaOrder = await alpacaClient.placeOrder({
               symbol: order.symbol,
               notional: order.notional.toFixed(2),

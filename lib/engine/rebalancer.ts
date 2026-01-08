@@ -5,6 +5,7 @@ export interface RebalanceOrder {
   side: "buy" | "sell";
   notional: number;
   reason: string;
+  isShortTarget?: boolean;  // True if target position is a short
 }
 
 export interface RebalanceResult {
@@ -66,6 +67,7 @@ export function calculateRebalanceOrders(
     const positionType = target.side === 'short' ? 'short' : 'long';
     const weightPercent = (Math.abs(target.targetWeight) * 100).toFixed(1);
     const stepPercent = (fraction * 100).toFixed(0);
+    const isShortTarget = target.side === 'short';
 
     if (diff > 0) {
       orders.push({
@@ -73,6 +75,7 @@ export function calculateRebalanceOrders(
         side: "buy",
         notional: diff,
         reason: `Increase ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
+        isShortTarget,
       });
     } else if (diff < 0) {
       orders.push({
@@ -80,6 +83,7 @@ export function calculateRebalanceOrders(
         side: "sell",
         notional: Math.abs(diff),
         reason: `Reduce ${positionType} position toward ${weightPercent}% target (${stepPercent}% step)`,
+        isShortTarget,
       });
     }
   }
