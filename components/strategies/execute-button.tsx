@@ -24,7 +24,7 @@ interface OrderResult {
   symbol: string;
   side: "buy" | "sell";
   notional: number;
-  status: "success" | "failed";
+  status: "success" | "failed" | "skipped";
   error?: string;
   orderId?: string;
 }
@@ -415,13 +415,15 @@ export function ExecuteButton({ strategyId, strategyName, isEnabled }: ExecuteBu
                     {executionResult.orderResults.map((order, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-2 rounded border"
+                        className="flex items-start justify-between p-3 rounded border"
                       >
                         <div className="flex items-center gap-2">
                           {order.status === "success" ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                          ) : order.status === "skipped" ? (
+                            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
                           ) : (
-                            <XCircle className="h-4 w-4 text-red-600" />
+                            <XCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                           )}
                           <Badge variant={order.side === "buy" ? "default" : "secondary"}>
                             {order.side.toUpperCase()}
@@ -431,9 +433,18 @@ export function ExecuteButton({ strategyId, strategyName, isEnabled }: ExecuteBu
                             ${order.notional.toLocaleString()}
                           </span>
                         </div>
-                        {order.status === "failed" && order.error && (
-                          <span className="text-xs text-red-600">{order.error}</span>
-                        )}
+                        <div className="flex flex-col items-end gap-1">
+                          {order.status === "success" && order.orderId && (
+                            <span className="text-xs text-muted-foreground font-mono">
+                              ID: {order.orderId.slice(0, 8)}
+                            </span>
+                          )}
+                          {(order.status === "failed" || order.status === "skipped") && order.error && (
+                            <span className="text-xs text-red-600 max-w-xs text-right">
+                              {order.error}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
