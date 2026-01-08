@@ -366,38 +366,33 @@ export async function executeStrategy(
             });
             console.log(`✓ ${order.symbol} order submitted successfully (order ID: ${alpacaOrder.id})`);
           } catch (notionalError) {
-            // If fractional shares not supported, retry with whole shares
+            // If notional orders not supported, retry with qty (fractional shares may still work)
             const errorMsg = notionalError instanceof Error ? notionalError.message : "";
             if (errorMsg.includes("not fractionable") || errorMsg.includes("40310000")) {
-              console.log(`${order.symbol} doesn't support fractional shares, retrying with whole shares`);
+              console.log(`${order.symbol} notional order failed, retrying with qty`);
               
-              // Get current price and calculate whole shares
+              // Get current price and calculate shares
               const bars = await alpacaClient.getBars(order.symbol, { limit: 1 });
               if (bars.length === 0) {
-                throw new Error("Cannot get current price for whole share calculation");
+                throw new Error("Cannot get current price for qty calculation");
               }
               const currentPrice = bars[0].c;
-              let qty = Math.floor(order.notional / currentPrice);
+              let qty = order.notional / currentPrice;
               
-              // For sell orders, sell ALL shares owned to avoid fractional remnants
+              // For sell orders, cap at actual shares owned
               if (order.side === "sell") {
                 const currentPos = currentPositions.find(p => p.symbol === order.symbol);
-                if (currentPos && currentPos.qty > 0) {
-                  // Selling a long position - close it completely (round UP to sell fractional part)
-                  qty = Math.ceil(currentPos.qty);
-                  console.log(`📊 ${order.symbol}: Closing entire position (${currentPos.qty.toFixed(6)} shares → ${qty} whole shares)`);
-                } else if (currentPos && currentPos.qty < 0) {
-                  // Covering a short position
-                  const availableShort = Math.abs(currentPos.qty);
-                  if (qty > Math.ceil(availableShort)) {
-                    console.log(`⚠ Capping ${order.symbol} short cover: requested ${qty} shares, only ${availableShort.toFixed(6)} available`);
-                    qty = Math.ceil(availableShort);
+                if (currentPos) {
+                  const ownedQty = Math.abs(currentPos.qty);
+                  if (qty > ownedQty) {
+                    console.log(`📊 ${order.symbol}: Capping sell to owned quantity (${ownedQty.toFixed(6)} shares)`);
+                    qty = ownedQty;
                   }
                 }
               }
               
               if (qty === 0) {
-                throw new Error(`Notional $${order.notional.toFixed(2)} too small for whole shares at $${currentPrice.toFixed(2)}/share`);
+                throw new Error(`Notional $${order.notional.toFixed(2)} too small at $${currentPrice.toFixed(2)}/share`);
               }
               
               // Retry with whole shares
