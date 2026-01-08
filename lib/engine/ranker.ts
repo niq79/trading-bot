@@ -190,8 +190,8 @@ export async function rankSymbols(
         metrics[factor.factor] = value;
 
         // Normalize and apply weight
-        // Higher values are better unless factor is inverse (like volatility)
-        const inverseFactor = ["volatility"].includes(factor.factor);
+        // Lower values are better for low volatility, higher for everything else
+        const inverseFactor = ["volatility", "volatility_low"].includes(factor.factor);
         const normalizedValue = inverseFactor ? -value : value;
 
         totalScore += normalizedValue * factor.weight;
@@ -265,22 +265,44 @@ function getFactorValue(
   if (bars.length === 0) return null;
 
   switch (factor) {
+    // Generic momentum - uses full lookback period
+    case "momentum":
+      return calculateMomentum(bars, bars.length);
+    
+    // Legacy momentum metrics (deprecated but supported)
     case "momentum_5d":
       return calculateMomentum(bars, 5);
     case "momentum_10d":
       return calculateMomentum(bars, 10);
     case "momentum_20d":
-    case "momentum":
     case "return":
       return calculateMomentum(bars, 20);
     case "momentum_60d":
       return calculateMomentum(bars, 60);
-    case "volatility":
+    
+    // Volatility metrics
+    case "volatility_low":
+    case "volatility_high":
+    case "volatility": // Legacy
       return calculateVolatility(bars);
-    case "volume":
+    
+    // Volume metrics
+    case "relative_volume":
+      // Today's volume relative to average
+      const avgVol = calculateAverageVolume(bars);
+      const todayVol = bars[bars.length - 1].v;
+      return avgVol > 0 ? todayVol / avgVol : 0;
+    case "volume": // Legacy
       return calculateAverageVolume(bars);
+    
+    // RSI
     case "rsi":
       return calculateRSI(bars);
+    
+    // Sharpe ratio (risk-adjusted returns)
+    case "sharpe":
+      return calculateSharpe(bars);
+    
     default:
       console.warn(`Unknown factor: ${factor}`);
       return null;
@@ -342,6 +364,53 @@ function calculateRSI(bars: Bar[], period: number = 14): number {
   }
 
   let gains = 0;
+  let losses = 0;
+
+  // Calculate initial average gain/loss
+  for (let i = bars.length - period; i < bars.length; i++) {
+    const change = bars[i].c - bars[i - 1].c;
+    if (change > 0) {
+      gains += change;
+    } else {
+      losses += Math.abs(change);
+    }
+  }
+
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+
+  if (avgLoss === 0) return 100;
+  if (avgGain === 0) return 0;
+
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+/**
+ * Calculate Sharpe Ratio (risk-adjusted returns)
+ */
+function calculateSharpe(bars: Bar[]): number {
+  if (bars.length < 2) return 0;
+  
+  const returns: number[] = [];
+  for (let i = 1; i < bars.length; i++) {
+    if (bars[i - 1].c === 0) continue;
+    const dailyReturn = Math.log(bars[i].c / bars[i - 1].c);
+    returns.push(dailyReturn);
+  }
+
+  if (returns.length === 0) return 0;
+
+  const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const squaredDiffs = returns.map((r) => Math.pow(r - avgReturn, 2));
+  const variance = squaredDiffs.reduce((a, b) => a + b, 0) / returns.length;
+  const stdDev = Math.sqrt(variance);
+
+  if (stdDev === 0) return 0;
+
+  // Annualized Sharpe ratio
+  return (avgReturn / stdDev) * Math.sqrt(252);
+}
   let losses = 0;
 
   for (let i = bars.length - period; i < bars.length; i++) {

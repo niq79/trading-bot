@@ -37,11 +37,32 @@ next-env.d.ts
 # Supabase
 supabase/.branches
 supabase/.temp
+.supabase/
 
 # IDE
 .idea
 .vscode
+*.swp
+*.swo
+*~
 
 # GitHub Copilot
 *Citations.md
 # Code Citations.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package manager
+.pnpm-debug.log
+.yarn/
+.pnp.*

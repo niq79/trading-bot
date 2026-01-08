@@ -1,6 +1,7 @@
 export interface StrategyParams {
   lookback_days: number;
-  ranking_metric: "momentum_5d" | "momentum_10d" | "momentum_20d" | "momentum_60d" | "volatility" | "volume" | "rsi";
+  ranking_metric: "momentum" | "volatility_low" | "volatility_high" | "rsi" | "relative_volume" | "sharpe" | 
+    "momentum_5d" | "momentum_10d" | "momentum_20d" | "momentum_60d" | "volatility" | "volume"; // Legacy support
   long_n: number;
   short_n: number;
   rebalance_fraction: number;
@@ -74,8 +75,8 @@ export interface UpdateStrategyInput extends Partial<CreateStrategyInput> {
 }
 
 export const DEFAULT_STRATEGY_PARAMS: StrategyParams = {
-  lookback_days: 30,
-  ranking_metric: "momentum_20d",
+  lookback_days: 60,
+  ranking_metric: "momentum",
   long_n: 10,
   short_n: 0,
   rebalance_fraction: 0.25,
@@ -102,11 +103,13 @@ export const PREDEFINED_LISTS = [
 ] as const;
 
 export const RANKING_METRICS = [
-  { value: "momentum_5d", label: "Momentum (5 day)" },
-  { value: "momentum_10d", label: "Momentum (10 day)" },
-  { value: "momentum_20d", label: "Momentum (20 day)" },
-  { value: "momentum_60d", label: "Momentum (60 day)" },
-  { value: "volatility", label: "Volatility (lower is better)" },
-  { value: "volume", label: "Average Volume" },
-  { value: "rsi", label: "RSI" },
-] as const;
+  { value: "momentum", label: "Momentum", description: "Price return over lookback period. Higher = stronger uptrend." },
+  { value: "volatility_low", label: "Low Volatility", description: "Picks least volatile stocks. Good for defensive strategies." },
+  { value: "volatility_high", label: "High Volatility", description: "Picks most volatile stocks. Good for aggressive momentum plays." },
+  { value: "rsi", label: "RSI (14-period)", description: "Relative Strength Index. Below 30 = oversold, above 70 = overbought." },
+  { value: "relative_volume", label: "Relative Volume", description: "Volume vs average. Values >1 indicate above-average activity." },
+  { value: "sharpe", label: "Sharpe Ratio", description: "Risk-adjusted returns. Higher = better return per unit of risk." },
+  // Legacy support (deprecated)
+  { value: "momentum_20d", label: "Momentum (20 day) [deprecated]", description: "Use 'Momentum' with Lookback Period instead." },
+  { value: "momentum_60d", label: "Momentum (60 day) [deprecated]", description: "Use 'Momentum' with Lookback Period instead." },
+];
